@@ -13,8 +13,9 @@ import {
   spawnLocalSwarm,
   tickOrganisms,
 } from "./genome";
-import type { Activity, GeneratedCopy, IntentPulse, Organism, Swarm } from "./types";
+import type { Activity, Destinations, GeneratedCopy, IntentPulse, Organism, Swarm } from "./types";
 import { uid } from "./utils";
+import { DEFAULT_DESTINATIONS } from "./deploy";
 
 type SwarmState = {
   hydrated: boolean;
@@ -27,6 +28,7 @@ type SwarmState = {
   activities: Activity[];
   lastAutoHijackAt: number;
   lastAutoEvolveAt: number;
+  destinations: Destinations;
   setHydrated: () => void;
   select: (id: string | null) => void;
   toggleRun: (swarmId: string) => void;
@@ -45,6 +47,7 @@ type SwarmState = {
   goLive: (id: string) => void;
   pullFromLive: (id: string) => void;
   setBudget: (swarmId: string, dailyBudget: number) => void;
+  setDestinations: (patch: Partial<Destinations>) => void;
   resetLab: () => void;
 };
 
@@ -77,6 +80,7 @@ function initial(): Pick<
   | "activities"
   | "lastAutoHijackAt"
   | "lastAutoEvolveAt"
+  | "destinations"
 > {
   return {
     swarms: seedSwarms(),
@@ -95,6 +99,7 @@ function initial(): Pick<
     ],
     lastAutoHijackAt: 0,
     lastAutoEvolveAt: 0,
+    destinations: { ...DEFAULT_DESTINATIONS },
   };
 }
 
@@ -296,7 +301,15 @@ export const useSwarmStore = create<SwarmState>()(
         set((s) => ({
           swarms: s.swarms.map((sw) => (sw.id === swarmId ? { ...sw, dailyBudget } : sw)),
         })),
-      resetLab: () => set({ ...initial(), hydrated: true }),
+      setDestinations: (patch) =>
+        set((s) => ({
+          destinations: {
+            ...DEFAULT_DESTINATIONS,
+            ...s.destinations,
+            ...patch,
+          },
+        })),
+      resetLab: () => set({ ...initial(), destinations: get().destinations, hydrated: true }),
     }),
     {
       name: "swarm-mn-v3",
@@ -311,7 +324,16 @@ export const useSwarmStore = create<SwarmState>()(
         activities: s.activities,
         lastAutoHijackAt: s.lastAutoHijackAt,
         lastAutoEvolveAt: s.lastAutoEvolveAt,
+        destinations: s.destinations ?? DEFAULT_DESTINATIONS,
       }),
+      merge: (persisted, current) => {
+        const p = (persisted ?? {}) as Partial<SwarmState>;
+        return {
+          ...current,
+          ...p,
+          destinations: { ...DEFAULT_DESTINATIONS, ...p.destinations },
+        };
+      },
     },
   ),
 );

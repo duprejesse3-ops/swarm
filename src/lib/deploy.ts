@@ -1,5 +1,5 @@
 import { productBySku } from "./catalog";
-import type { Channel, Organism } from "./types";
+import type { Channel, Destinations, Organism } from "./types";
 import { copyToClipboard } from "./utils";
 
 export type DeployTarget = {
@@ -8,6 +8,38 @@ export type DeployTarget = {
   href: string;
   hint: string;
 };
+
+export const DEFAULT_DESTINATIONS: Destinations = {
+  xHandle: "DupreJesse14633",
+  redditUser: "",
+  redditSub: "smallbusiness",
+};
+
+export const REDDIT_SUBS = [
+  "smallbusiness",
+  "Entrepreneur",
+  "productivity",
+  "automation",
+  "ChatGPT",
+  "SEO",
+  "sales",
+];
+
+export function destOf(dest?: Destinations | null): Destinations {
+  return {
+    xHandle: stripAt(dest?.xHandle || DEFAULT_DESTINATIONS.xHandle),
+    redditUser: stripAt(dest?.redditUser || ""),
+    redditSub: stripSub(dest?.redditSub || DEFAULT_DESTINATIONS.redditSub),
+  };
+}
+
+function stripAt(value: string) {
+  return value.trim().replace(/^@/, "");
+}
+
+function stripSub(value: string) {
+  return value.trim().replace(/^\/?(r\/)?/i, "").replace(/\s+/g, "");
+}
 
 export function organismPacket(organism: Organism) {
   if (organism.channel === "search") return googleAdsCopy(organism);
@@ -46,48 +78,79 @@ export function tweetText(organism: Organism) {
   return core.length <= 280 ? core : `${organism.headline}\n\n${organism.landingUrl}`.slice(0, 280);
 }
 
-export function deployTarget(organism: Organism): DeployTarget {
+export function redditSubmitUrl(organism: Organism, dest?: Destinations) {
+  const d = destOf(dest);
   const product = productBySku(organism.sku);
+  const title = clip(organism.headline || product?.job || organism.sku, 300);
+  const by = d.redditUser ? `\n\n— u/${d.redditUser}` : "";
+  const body = `${organism.body}\n\n${organism.proofHook}\n\n${organism.landingUrl}${by}`;
+  const sub = d.redditSub || "smallbusiness";
+  return `https://www.reddit.com/r/${encodeURIComponent(sub)}/submit?title=${encodeURIComponent(title)}&text=${encodeURIComponent(body)}`;
+}
+
+export function xIntentUrl(organism: Organism) {
+  return `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText(organism))}`;
+}
+
+export function xProfileUrl(dest?: Destinations) {
+  const handle = destOf(dest).xHandle;
+  return handle ? `https://x.com/${encodeURIComponent(handle)}` : "https://x.com/";
+}
+
+export function redditUserUrl(dest?: Destinations) {
+  const user = destOf(dest).redditUser;
+  return user ? `https://www.reddit.com/user/${encodeURIComponent(user)}` : "https://www.reddit.com/";
+}
+
+export function deployTargets(organism: Organism, dest?: Destinations): DeployTarget[] {
+  const d = destOf(dest);
   if (organism.channel === "search") {
-    return {
-      id: "google-ads",
-      label: "Open Google Ads",
-      href: "https://ads.google.com/aw/campaigns",
-      hint: "Packet is RSA-ready. Paste headlines, description, and the UTM final URL into a Search campaign. Google bills that account — SWARM does not.",
-    };
-  }
-  if (organism.channel === "conversation") {
-    const text = tweetText(organism);
-    return {
-      id: "x",
-      label: "Post on X",
-      href: `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`,
-      hint: "Opens a real X compose with the intercept already filled. Posting is you, on your account.",
-    };
+    return [
+      {
+        id: "google-ads",
+        label: "Open Google Ads",
+        href: "https://ads.google.com/aw/campaigns",
+        hint: "Packet is RSA-ready. Paste into a Search campaign. Google bills that account — SWARM does not.",
+      },
+    ];
   }
   if (organism.channel === "proof") {
-    return {
-      id: "site",
-      label: "Open the live spec",
-      href: organism.landingUrl,
-      hint: "Proof-loop is the spec sheet on multinicheai.com. The UTM link is live. Anyone who lands is a real visitor.",
-    };
+    return [
+      {
+        id: "site",
+        label: "Open the live spec",
+        href: organism.landingUrl,
+        hint: "Proof-loop is the spec on multinicheai.com. The UTM link is live.",
+      },
+    ];
   }
-  const title = product?.job ?? organism.headline;
-  const body = `${organism.body}\n\n${organism.landingUrl}`;
-  return {
-    id: "reddit",
-    label: "Post a shadow listing",
-    href: `https://www.reddit.com/submit?title=${encodeURIComponent(title)}&text=${encodeURIComponent(body)}`,
-    hint: "Opens Reddit submit with the native listing. Pick the thread. Not a banner — a reply people would actually post.",
+  const x: DeployTarget = {
+    id: "x",
+    label: d.xHandle ? `Post on X as @${d.xHandle}` : "Post on X",
+    href: xIntentUrl(organism),
+    hint: "Opens X compose with the intercept filled. Posts from the account you are logged into.",
   };
+  const reddit: DeployTarget = {
+    id: "reddit",
+    label: `Post to r/${d.redditSub}`,
+    href: redditSubmitUrl(organism, d),
+    hint: d.redditUser
+      ? `Opens Reddit submit in r/${d.redditSub} as u/${d.redditUser}. Native listing, not a banner.`
+      : `Opens Reddit submit in r/${d.redditSub}. Add your Reddit username in Destinations if you want it signed.`,
+  };
+  if (organism.channel === "conversation") return [x, reddit];
+  return [reddit, x];
+}
+
+export function deployTarget(organism: Organism, dest?: Destinations): DeployTarget {
+  return deployTargets(organism, dest)[0]!;
 }
 
 export function channelVerb(channel: Channel) {
   if (channel === "search") return "Ship to Google Ads";
-  if (channel === "conversation") return "Post on X";
+  if (channel === "conversation") return "Post on X + Reddit";
   if (channel === "proof") return "Open the live spec";
-  return "Post the listing";
+  return "Post to Reddit";
 }
 
 export async function copyOrganismPacket(organism: Organism) {
@@ -105,7 +168,7 @@ export async function shareOrganism(organism: Organism) {
       });
       return "shared" as const;
     } catch {
-      // user cancelled or share failed — fall through to copy
+      // cancelled
     }
   }
   const ok = await copyToClipboard(text);

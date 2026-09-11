@@ -9,6 +9,7 @@ import {
   promptInstall,
   subscribeInstall,
 } from "@/lib/install";
+import { DestinationsConfig } from "@/components/destinations-config";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -105,12 +106,25 @@ function InstallPage() {
 
       <Card>
         <CardContent className="pt-5">
+          <h2 className="text-lg font-medium">X and Reddit destinations</h2>
+          <p className="mt-2 text-sm text-muted">
+            Go live opens compose on the account already signed in on this phone. X is prefilled as
+            @DupreJesse14633. Add Reddit so listings land in the right community.
+          </p>
+          <div className="mt-5">
+            <DestinationsConfig />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="pt-5">
           <h2 className="text-lg font-medium">What “fully automatic” means</h2>
           <ul className="mt-3 space-y-2 text-sm text-muted">
             <li>Autopilot hijacks new intent pulses and spawns organisms — no click required.</li>
             <li>Running swarms tick on their own. Ripe swarms evolve. Losers die.</li>
             <li>Copy stays proof-first. Grok writes copy only when you ask it to, so autopilot cannot burn API quota.</li>
-            <li>Deploy packets still copy out of Studio / Swarm when you are ready to paste into Google, X, or a thread.</li>
+            <li>Go live copies the packet and opens X, Reddit, Google Ads, or the live spec.</li>
           </ul>
         </CardContent>
       </Card>

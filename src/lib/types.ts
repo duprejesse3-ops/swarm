@@ -86,3 +86,9 @@ export type Activity = {
   kind: ActivityKind;
   text: string;
 };
+
+export type Destinations = {
+  xHandle: string;
+  redditUser: string;
+  redditSub: string;
+};
