@@ -208,7 +208,7 @@ export function renderWebManifest(hostHeader) {
       shortcuts: [
         { name: "Radar", short_name: "Radar", url: "/", description: "Live intent radar" },
         { name: "Swarm", short_name: "Swarm", url: "/swarm", description: "Running organisms" },
-        { name: "Install", short_name: "Install", url: "/install", description: "Android and Windows install" },
+        { name: "Product", short_name: "Product", url: "/product", description: "Site listing kit" },
       ],
       icons,
     },

@@ -1,8 +1,31 @@
 import type { Product } from "./types";
 
 export const SITE = "https://multinicheai.com";
+export const SWARM_SKU = "AI-AB-070";
+export const SWARM_REPO = "https://github.com/duprejesse3-ops/swarm";
 
 export const PRODUCTS: Product[] = [
+  {
+    sku: "AI-AB-070",
+    name: "SWARM Intent Autopilot",
+    price: 79,
+    format: "Automation",
+    role: "Store & Site Owners",
+    job: "Hijack demand that already exists and evolve proof-first ads on autopilot",
+    proof: "Autopilot maps a pain-utterance to a SKU, spawns eight organisms, evolves winners — no click",
+    pain: "A catalog of instruments and nobody intercepts the sentences people already type.",
+    queries: [
+      "automate ads for ai tools site",
+      "intent hijack ads not google tax",
+      "autopilot ads for digital products",
+    ],
+    utterances: [
+      "I have a catalog and no traffic",
+      "Buying Google ads for AI tools is a tax",
+      "Need ads that intercept the job people already typed",
+    ],
+    landing: "/",
+  },
   {
     sku: "AI-AB-002",
     name: "Inbox Zero Automation",

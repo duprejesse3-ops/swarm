@@ -53,6 +53,9 @@ function RadarHome() {
             <Button asChild variant="outline">
               <Link to="/install">Get the app</Link>
             </Button>
+            <Button asChild variant="outline">
+              <Link to="/product">List on the site</Link>
+            </Button>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3">

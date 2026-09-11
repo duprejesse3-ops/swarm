@@ -1,9 +1,13 @@
 import { useMemo, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
-import { FORMATS, PRODUCTS, ROLES, SITE } from "@/lib/catalog";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { FORMATS, PRODUCTS, ROLES, SITE, SWARM_SKU } from "@/lib/catalog";
 import type { Product } from "@/lib/types";
+import { listingFor } from "@/lib/listing";
+import { copyToClipboard } from "@/lib/utils";
+import { toast } from "sonner";
 import { HijackPanel } from "@/components/hijack-panel";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
@@ -13,7 +17,7 @@ function CatalogPage() {
   const [q, setQ] = useState("");
   const [role, setRole] = useState("All");
   const [format, setFormat] = useState("All");
-  const [open, setOpen] = useState<string | null>(PRODUCTS[0]?.sku ?? null);
+  const [open, setOpen] = useState<string | null>(SWARM_SKU);
   const list = useMemo(() => {
     return PRODUCTS.filter((p) => {
       if (role !== "All" && p.role !== role) return false;
@@ -32,9 +36,26 @@ function CatalogPage() {
         <h1 className="mt-1 text-3xl font-medium tracking-tight">Every SKU is a cluster of utterances</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted">
           You do not advertise MultiNiche as “an AI store.” You intercept the job each instrument
-          already does. Pick a product, hijack one of its sentences, ship a swarm.
+          already does. Pick a product, hijack one of its sentences, ship a swarm — or copy a
+          spec-sheet listing and paste it onto the site.
         </p>
       </div>
+
+      <Link
+        to="/product"
+        className="flex flex-col gap-2 rounded-xl bg-surface p-4 shadow-[var(--shadow-border)] hover:bg-elevated sm:flex-row sm:items-center sm:justify-between"
+      >
+        <div>
+          <p className="font-mono text-[10px] uppercase tracking-widest text-subtle">
+            {SWARM_SKU} · $79.00 · Automation
+          </p>
+          <p className="mt-1 font-medium">SWARM is a product on the site, not only a lab</p>
+          <p className="mt-1 text-sm text-muted">
+            Spec sheet, catalog HTML, JSON-LD, shop CSV — ready to paste.
+          </p>
+        </div>
+        <span className="text-sm text-accent">Open the listing kit</span>
+      </Link>
 
       <div className="flex flex-col gap-3 md:flex-row">
         <Input
@@ -99,6 +120,7 @@ function CatalogPage() {
 
 function ProductDetail({ product }: { product: Product }) {
   const [intent, setIntent] = useState(product.utterances[0] ?? "");
+  const listing = listingFor(product);
   return (
     <Card className="h-fit lg:sticky lg:top-20">
       <CardContent className="pt-5">
@@ -130,7 +152,23 @@ function ProductDetail({ product }: { product: Product }) {
           <p className="text-[11px] uppercase tracking-widest text-subtle">Long-tail queries</p>
           <p className="mt-2 font-mono text-xs text-muted">{product.queries.join(" · ")}</p>
         </div>
-        <div className="mt-6 border-t border-border pt-4">
+        <div className="mt-6 flex flex-col gap-2 border-t border-border pt-4">
+          <Button
+            variant="outline"
+            onClick={() =>
+              void copyToClipboard(listing.bundle).then((ok) => {
+                if (ok) toast.success("Listing kit copied", { description: "Paste onto multinicheai.com." });
+                else toast.message("Copy failed");
+              })
+            }
+          >
+            Copy site listing
+          </Button>
+          <Button asChild variant="ghost">
+            <Link to="/product">Open listing kit</Link>
+          </Button>
+        </div>
+        <div className="mt-4">
           <HijackPanel sku={product.sku} intent={intent} />
         </div>
       </CardContent>

@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Download, Dna, Hexagon, Library, Radar, LayoutTemplate } from "lucide-react";
+import { Download, Dna, Hexagon, Library, Package, Radar, LayoutTemplate } from "lucide-react";
 import { Toaster } from "sonner";
 import { cn } from "@/lib/utils";
 import { useSwarmStore } from "@/lib/store";
@@ -14,6 +14,7 @@ const NAV = [
   { to: "/studio", label: "Studio", icon: LayoutTemplate, key: "3" },
   { to: "/evolve", label: "Evolve", icon: Dna, key: "4" },
   { to: "/catalog", label: "Catalog", icon: Library, key: "5" },
+  { to: "/product", label: "Product", icon: Package, key: "6" },
 ] as const;
 
 export function Shell({ children }: { children: ReactNode }) {
@@ -147,7 +148,7 @@ export function Shell({ children }: { children: ReactNode }) {
         </header>
         <main className="mx-auto w-full max-w-7xl px-4 pt-6 pb-24 md:pb-10">{children}</main>
         <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-bg/95 lg:hidden">
-          <div className="grid grid-cols-5">
+          <div className="grid grid-cols-6">
             {NAV.map((item) => {
               const active = pathname === item.to;
               const Icon = item.icon;

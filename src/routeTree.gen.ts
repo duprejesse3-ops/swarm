@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as CatalogRouteImport } from './routes/catalog'
 import { Route as EvolveRouteImport } from './routes/evolve'
 import { Route as InstallRouteImport } from './routes/install'
+import { Route as ProductRouteImport } from './routes/product'
 import { Route as StudioRouteImport } from './routes/studio'
 import { Route as SwarmRouteImport } from './routes/swarm'
 
@@ -36,6 +37,11 @@ const InstallRoute = InstallRouteImport.update({
   path: '/install',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProductRoute = ProductRouteImport.update({
+  id: '/product',
+  path: '/product',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StudioRoute = StudioRouteImport.update({
   id: '/studio',
   path: '/studio',
@@ -52,6 +58,7 @@ export interface FileRoutesByFullPath {
   '/catalog': typeof CatalogRoute
   '/evolve': typeof EvolveRoute
   '/install': typeof InstallRoute
+  '/product': typeof ProductRoute
   '/studio': typeof StudioRoute
   '/swarm': typeof SwarmRoute
 }
@@ -60,6 +67,7 @@ export interface FileRoutesByTo {
   '/catalog': typeof CatalogRoute
   '/evolve': typeof EvolveRoute
   '/install': typeof InstallRoute
+  '/product': typeof ProductRoute
   '/studio': typeof StudioRoute
   '/swarm': typeof SwarmRoute
 }
@@ -69,20 +77,36 @@ export interface FileRoutesById {
   '/catalog': typeof CatalogRoute
   '/evolve': typeof EvolveRoute
   '/install': typeof InstallRoute
+  '/product': typeof ProductRoute
   '/studio': typeof StudioRoute
   '/swarm': typeof SwarmRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/catalog' | '/evolve' | '/install' | '/studio' | '/swarm'
+  fullPaths:
+    | '/'
+    | '/catalog'
+    | '/evolve'
+    | '/install'
+    | '/product'
+    | '/studio'
+    | '/swarm'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/catalog' | '/evolve' | '/install' | '/studio' | '/swarm'
+  to:
+    | '/'
+    | '/catalog'
+    | '/evolve'
+    | '/install'
+    | '/product'
+    | '/studio'
+    | '/swarm'
   id:
     | '__root__'
     | '/'
     | '/catalog'
     | '/evolve'
     | '/install'
+    | '/product'
     | '/studio'
     | '/swarm'
   fileRoutesById: FileRoutesById
@@ -92,6 +116,7 @@ export interface RootRouteChildren {
   CatalogRoute: typeof CatalogRoute
   EvolveRoute: typeof EvolveRoute
   InstallRoute: typeof InstallRoute
+  ProductRoute: typeof ProductRoute
   StudioRoute: typeof StudioRoute
   SwarmRoute: typeof SwarmRoute
 }
@@ -126,6 +151,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InstallRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/product': {
+      id: '/product'
+      path: '/product'
+      fullPath: '/product'
+      preLoaderRoute: typeof ProductRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/studio': {
       id: '/studio'
       path: '/studio'
@@ -148,6 +180,7 @@ const rootRouteChildren: RootRouteChildren = {
   CatalogRoute: CatalogRoute,
   EvolveRoute: EvolveRoute,
   InstallRoute: InstallRoute,
+  ProductRoute: ProductRoute,
   StudioRoute: StudioRoute,
   SwarmRoute: SwarmRoute,
 }

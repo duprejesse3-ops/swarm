@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { Download, Monitor, Smartphone } from "lucide-react";
 import {
@@ -49,7 +49,8 @@ function InstallPage() {
         <p className="mt-3 text-base leading-relaxed text-muted">
           One tap from Chrome or Edge. Autopilot keeps hijacking intent, evolving winners, and
           writing proof-first ads while the app sits on your home screen or Start menu. No Play
-          Store listing, no Microsoft Store listing — the install is the site, as a real app window.
+          Store listing, no Microsoft Store listing — the install is the site, as a real app
+          window. The same build is SKU AI-AB-070 on multinicheai.com: $79.00, one-time, bundle-eligible.
         </p>
         <div className="mt-6 flex flex-wrap gap-3">
           <Button onClick={() => void install()} disabled={installed}>
@@ -60,6 +61,9 @@ function InstallPage() {
             <a href="https://github.com/duprejesse3-ops/swarm" target="_blank" rel="noreferrer">
               Source on GitHub
             </a>
+          </Button>
+          <Button asChild variant="outline">
+            <Link to="/product">Site listing kit</Link>
           </Button>
         </div>
       </div>
@@ -90,7 +94,7 @@ function InstallPage() {
             <ol className="mt-4 space-y-3 text-sm text-muted">
               <Step n="1" text="Open in Edge or Chrome on Windows." />
               <Step n="2" text="Click Install SWARM, or the install icon in the address bar." />
-              <Step n="3" text="Pin to Start or taskbar. Keyboard: 1–5 to move, A for autopilot, I for this page." />
+              <Step n="3" text="Pin to Start or taskbar. Keyboard: 1–6 to move, A for autopilot, I for this page, 6 for the site listing kit." />
             </ol>
             {platform === "windows" ? (
               <p className="mt-4 text-xs text-accent">This device looks like Windows.</p>

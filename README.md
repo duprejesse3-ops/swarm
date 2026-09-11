@@ -23,7 +23,13 @@ This is a progressive web app. There is **no Play Store APK** and **no Microsoft
 1. Open SWARM in Edge or Chrome.
 2. Click **Get app**, or the install icon in the address bar.
 3. Pin to Start or the taskbar. The title bar overlays Windows chrome.
-4. Keyboard: `1–5` move, `A` autopilot, `I` install page.
+4. Keyboard: `1–6` move, `A` autopilot, `I` install page.
+
+## Product (multinicheai.com)
+
+SWARM is SKU **AI-AB-070** — Automation, Store & Site Owners, **$79.00** one-time, bundle-eligible.
+
+The in-app **Product** page emits a spec-sheet listing: catalog HTML, product page markdown, JSON-LD, and shop CSV. Paste onto [multinicheai.com](https://multinicheai.com). Autopilot can hijack demand for this SKU the same way it does for every other instrument.
 
 ### Source zip
 
