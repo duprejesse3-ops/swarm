@@ -187,11 +187,11 @@ export function scoreOrganism(o: Organism, price: number) {
 }
 
 export function tickOrganisms(organisms: Organism[], hours: number, dailyBudget: number): Organism[] {
-  const alive = organisms.filter((o) => o.status !== "killed");
-  if (alive.length === 0) return organisms;
-  const share = dailyBudget / 24 / alive.length;
+  const sim = organisms.filter((o) => o.status === "alive" || o.status === "champion");
+  if (sim.length === 0) return organisms;
+  const share = dailyBudget / 24 / sim.length;
   return organisms.map((o) => {
-    if (o.status === "killed") return o;
+    if (o.status === "killed" || o.status === "live") return o;
     const product = productBySku(o.sku);
     const meta = CHANNEL_META[o.channel];
     const rng = mulberry32(hash32(`${o.id}:${o.impressions}:${hours}`));
@@ -237,7 +237,7 @@ export function markChampions(organisms: Organism[]): Organism[] {
     if (alive[0] && alive[0].fitness > 0) champIds.add(alive[0].id);
   }
   return organisms.map((o) => {
-    if (o.status === "killed") return o;
+    if (o.status === "killed" || o.status === "live") return o;
     if (champIds.has(o.id)) return { ...o, status: "champion" as const };
     if (o.status === "champion") return { ...o, status: "alive" as const };
     return o;
@@ -253,7 +253,7 @@ export function cullDuplicates(organisms: Organism[]): Organism[] {
     bySwarm.set(o.swarmId, list);
   }
   for (const list of bySwarm.values()) {
-    const alive = list.filter((o) => o.status !== "killed").sort((a, b) => b.fitness - a.fitness);
+    const alive = list.filter((o) => o.status !== "killed" && o.status !== "live").sort((a, b) => b.fitness - a.fitness);
     const perChannel = new Map<Channel, number>();
     const used = new Set<string>();
     for (const o of alive) {
@@ -276,25 +276,27 @@ export function evolveLocal(opts: {
   generation: number;
   organisms: Organism[];
 }): { killed: string[]; born: Organism[] } {
-  const alive = opts.organisms
-    .filter((o) => o.swarmId === opts.swarmId && o.status !== "killed")
+  const lab = opts.organisms
+    .filter((o) => o.swarmId === opts.swarmId && o.status !== "killed" && o.status !== "live")
     .sort((a, b) => b.fitness - a.fitness);
-  if (alive.length === 0) return { killed: [], born: [] };
-  const champion = alive[0]!;
+  const locked = opts.organisms.filter((o) => o.swarmId === opts.swarmId && o.status === "live");
+  if (lab.length === 0 && locked.length === 0) return { killed: [], born: [] };
+  const champion = lab[0] ?? locked[0]!;
   const product = productBySku(champion.sku) ?? PRODUCTS[0]!;
   const intent = champion.targetIntent;
-  const keep = new Set<string>([champion.id]);
+  const keep = new Set<string>(locked.map((o) => o.id));
+  if (lab[0]) keep.add(lab[0].id);
   for (const ch of CHANNELS) {
-    const best = alive.find((o) => o.channel === ch.id);
+    const best = lab.find((o) => o.channel === ch.id);
     if (best) keep.add(best.id);
   }
-  const killed = alive.filter((o) => !keep.has(o.id)).map((o) => o.id);
+  const killed = lab.filter((o) => !keep.has(o.id)).map((o) => o.id);
   const used = new Set(
-    alive.filter((o) => keep.has(o.id)).map((o) => headlineKey(o.headline)),
+    [...locked, ...lab.filter((o) => keep.has(o.id))].map((o) => headlineKey(o.headline)),
   );
   const born: Organism[] = [];
   CHANNELS.forEach((ch, i) => {
-    const parent = alive.find((o) => o.channel === ch.id) ?? champion;
+    const parent = lab.find((o) => o.channel === ch.id) ?? champion;
     for (let attempt = 0; attempt < 5; attempt++) {
       const copy = localCopy(product, intent, ch.id, opts.generation * 17 + i * 5 + attempt + 3);
       const key = headlineKey(copy.headline);

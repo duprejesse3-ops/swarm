@@ -19,6 +19,7 @@ export function OrganismCard({
 }) {
   const product = productBySku(organism.sku);
   const dead = organism.status === "killed";
+  const shipped = organism.status === "live";
   return (
     <button
       type="button"
@@ -32,8 +33,18 @@ export function OrganismCard({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <Badge variant={organism.status === "champion" ? "accent" : dead ? "danger" : "default"}>
-              {organism.status}
+            <Badge
+              variant={
+                shipped
+                  ? "success"
+                  : organism.status === "champion"
+                    ? "accent"
+                    : dead
+                      ? "danger"
+                      : "default"
+              }
+            >
+              {shipped ? "live" : organism.status}
             </Badge>
             <span className="min-w-0 font-mono text-[10px] uppercase tracking-widest text-subtle">
               {channelLabel(organism.channel)} · gen {organism.generation}
@@ -50,10 +61,16 @@ export function OrganismCard({
         </div>
       </div>
       <div className="mt-3 grid grid-cols-4 gap-2 font-mono text-[11px] tabular-nums text-muted">
-        <span>{formatCompact(organism.impressions)} imp</span>
-        <span>{formatCompact(organism.clicks)} clk</span>
-        <span>{organism.conversions} conv</span>
-        <span>{formatMoney(organism.spend)}</span>
+        {shipped ? (
+          <span className="col-span-4 text-success">Lab frozen · real UTM is live</span>
+        ) : (
+          <>
+            <span>{formatCompact(organism.impressions)} imp</span>
+            <span>{formatCompact(organism.clicks)} clk</span>
+            <span>{organism.conversions} conv</span>
+            <span>{formatMoney(organism.spend)}</span>
+          </>
+        )}
       </div>
       <p className="mt-2 min-w-0 truncate font-mono text-[10px] text-subtle">
         {product?.name} · {organism.sku}

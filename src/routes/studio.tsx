@@ -6,6 +6,7 @@ import { CHANNELS } from "@/lib/genome";
 import { useSwarmStore } from "@/lib/store";
 import { OrganismCard } from "@/components/organism-card";
 import { PlacementPreview } from "@/components/placement-preview";
+import { GoLivePanel } from "@/components/go-live-panel";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -45,8 +46,8 @@ function Studio() {
         <p className="font-mono text-[10px] uppercase tracking-widest text-subtle">Placement studio</p>
         <h1 className="mt-1 text-3xl font-medium tracking-tight">See the ad as the channel will</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted">
-          Proof-loop is the format that does not exist in the ad networks. A spec sheet with a
-          public run. Copy any organism into Google, X, or a thread as-is.
+          Proof-loop is the format that does not exist in the ad networks. Go live ships the packet
+          to Google, X, or the site. Lab numbers stay simulated until you do.
         </p>
       </div>
 
@@ -81,6 +82,7 @@ function Studio() {
               </Button>
             </div>
             <PlacementPreview organism={selected} />
+            <GoLivePanel organism={selected} />
             <div className="rounded-xl bg-surface p-5 shadow-[var(--shadow-border)]">
               <p className="font-mono text-[10px] uppercase tracking-widest text-subtle">
                 Why this placement

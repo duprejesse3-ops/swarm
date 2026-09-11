@@ -8,6 +8,7 @@ import { useSwarmStore } from "@/lib/store";
 import { formatCompact, formatMoney } from "@/lib/utils";
 import { OrganismCard, channelLabel } from "@/components/organism-card";
 import { PlacementPreview } from "@/components/placement-preview";
+import { GoLivePanel } from "@/components/go-live-panel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -30,15 +31,15 @@ function SwarmBoard() {
       organisms
         .filter((o) => !swarm || o.swarmId === swarm.id)
         .sort((a, b) => {
-          if (a.status === "killed" && b.status !== "killed") return 1;
-          if (b.status === "killed" && a.status !== "killed") return -1;
-          if (a.status === "champion" && b.status !== "champion") return -1;
-          if (b.status === "champion" && a.status !== "champion") return 1;
+          const rank = (s: string) => (s === "live" ? 0 : s === "champion" ? 1 : s === "alive" ? 2 : 3);
+          const d = rank(a.status) - rank(b.status);
+          if (d !== 0) return d;
           return b.fitness - a.fitness;
         }),
     [organisms, swarm],
   );
   const live = useMemo(() => list.filter((o) => o.status !== "killed"), [list]);
+  const shipped = useMemo(() => list.filter((o) => o.status === "live"), [list]);
   const dead = useMemo(() => list.filter((o) => o.status === "killed"), [list]);
   const selected =
     organisms.find((o) => o.id === selectedId) ?? live[0] ?? list[0];
@@ -71,7 +72,8 @@ function SwarmBoard() {
             Generation {swarm.generation} · {hoursLabel(swarm.simulatedHours)}
           </p>
           <p className="mt-2 max-w-xl text-sm text-muted">
-            Killed is not a crash. Autopilot discards losers and keeps champions. Live ads stay up top.
+            Impressions and spend in this board are the lab. Go live ships the ad to Google, X, or
+            the site. SWARM does not bill you.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -104,10 +106,10 @@ function SwarmBoard() {
       ) : null}
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Mini label="Impressions" value={formatCompact(stats.impressions)} />
-        <Mini label="Hijacked clicks" value={formatCompact(stats.clicks)} />
-        <Mini label="Conversions" value={String(stats.conversions)} />
-        <Mini label="Spend" value={formatMoney(stats.spend)} />
+        <Mini label="Impressions (lab)" value={formatCompact(stats.impressions)} />
+        <Mini label="Hijacked clicks (lab)" value={formatCompact(stats.clicks)} />
+        <Mini label="Conversions (lab)" value={String(stats.conversions)} />
+        <Mini label="Spend (lab)" value={formatMoney(stats.spend)} />
       </div>
 
       <label className="flex flex-col gap-2 text-xs uppercase tracking-widest text-subtle">
@@ -124,7 +126,8 @@ function SwarmBoard() {
       </label>
 
       <div className="flex flex-wrap items-center gap-2">
-        <Badge variant="accent">{live.length} live</Badge>
+        <Badge variant="accent">{live.length} in lab</Badge>
+        {shipped.length ? <Badge variant="success">{shipped.length} live</Badge> : null}
         <Badge variant={dead.length ? "danger" : "default"}>{dead.length} killed</Badge>
       </div>
 
@@ -134,7 +137,7 @@ function SwarmBoard() {
             <Card>
               <CardContent className="pt-5">
                 <p className="text-sm text-muted">
-                  No live organisms in this swarm. Autopilot will hijack a fresh intent from Radar.
+                  No organisms in this swarm. Autopilot will hijack a fresh intent from Radar.
                 </p>
                 <Button asChild className="mt-4">
                   <Link to="/">Open radar</Link>
@@ -188,6 +191,9 @@ function SwarmBoard() {
               </Button>
             </div>
             <PlacementPreview organism={selected} />
+            <div className="mt-4">
+              <GoLivePanel organism={selected} />
+            </div>
             <Card className="mt-4">
               <CardContent className="pt-5">
                 <p className="font-mono text-[10px] uppercase tracking-widest text-subtle">Genome</p>

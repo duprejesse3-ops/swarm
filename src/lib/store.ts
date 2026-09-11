@@ -42,6 +42,8 @@ type SwarmState = {
   }) => string;
   evolve: (swarmId: string, copies?: GeneratedCopy[]) => void;
   kill: (id: string) => void;
+  goLive: (id: string) => void;
+  pullFromLive: (id: string) => void;
   setBudget: (swarmId: string, dailyBudget: number) => void;
   resetLab: () => void;
 };
@@ -246,20 +248,49 @@ export const useSwarmStore = create<SwarmState>()(
           ];
         }
         const killedSet = new Set(local.killed);
+        const curSel = get().selectedId;
+        const curOrg = organisms.find((o) => o.id === curSel);
         set({
           swarms: swarms.map((s) => (s.id === swarmId ? { ...s, generation } : s)),
           organisms: markChampions(
             cullDuplicates([
               ...born,
-              ...organisms.map((o) => (killedSet.has(o.id) ? { ...o, status: "killed" as const } : o)),
+              ...organisms.map((o) =>
+                killedSet.has(o.id) && o.status !== "live" ? { ...o, status: "killed" as const } : o,
+              ),
             ]),
           ),
-          selectedId: born[0]?.id ?? get().selectedId,
+          selectedId: curOrg?.status === "live" ? curSel : (born[0]?.id ?? curSel),
         });
       },
       kill: (id) =>
         set((s) => ({
-          organisms: s.organisms.map((o) => (o.id === id ? { ...o, status: "killed" as const } : o)),
+          organisms: s.organisms.map((o) =>
+            o.id === id && o.status !== "live" ? { ...o, status: "killed" as const } : o,
+          ),
+        })),
+      goLive: (id) =>
+        set((s) => {
+          const org = s.organisms.find((o) => o.id === id);
+          if (!org || org.status === "killed") return s;
+          return {
+            selectedId: id,
+            organisms: s.organisms.map((o) =>
+              o.id === id ? { ...o, status: "live" as const, liveAt: Date.now() } : o,
+            ),
+            activities: [
+              log("live", `Went live · ${org.channel} · ${org.headline}`),
+              ...s.activities,
+            ].slice(0, 24),
+          };
+        }),
+      pullFromLive: (id) =>
+        set((s) => ({
+          organisms: s.organisms.map((o) =>
+            o.id === id && o.status === "live"
+              ? { ...o, status: "champion" as const, liveAt: undefined }
+              : o,
+          ),
         })),
       setBudget: (swarmId, dailyBudget) =>
         set((s) => ({

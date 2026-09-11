@@ -8,7 +8,7 @@ export type Format =
   | "Connector"
   | "Host";
 
-export type OrganismStatus = "alive" | "killed" | "champion";
+export type OrganismStatus = "alive" | "killed" | "champion" | "live";
 
 export type IntentSource = "search" | "x" | "reddit" | "forum";
 
@@ -46,6 +46,7 @@ export type Organism = {
   conversions: number;
   spend: number;
   createdAt: number;
+  liveAt?: number;
 };
 
 export type Swarm = {
@@ -77,7 +78,7 @@ export type GeneratedCopy = {
   cta: string;
 };
 
-export type ActivityKind = "hijack" | "evolve" | "pilot";
+export type ActivityKind = "hijack" | "evolve" | "pilot" | "live";
 
 export type Activity = {
   id: string;
