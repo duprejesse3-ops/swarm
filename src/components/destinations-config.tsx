@@ -52,7 +52,7 @@ export function DestinationsConfig({ compact }: { compact?: boolean }) {
             id="reddit-user"
             value={dest.redditUser}
             autoComplete="username"
-            placeholder="your Reddit name"
+            placeholder="MultiNicheAI81"
             onChange={(e) => setDestinations({ redditUser: e.target.value })}
           />
           {dest.redditUser ? (
@@ -101,7 +101,7 @@ export function DestinationsConfig({ compact }: { compact?: boolean }) {
         className="self-start"
         onClick={() => setDestinations(DEFAULT_DESTINATIONS)}
       >
-        Reset to @DupreJesse14633 / r/smallbusiness
+        Reset to @DupreJesse14633 / u/MultiNicheAI81
       </Button>
     </div>
   );

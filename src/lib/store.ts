@@ -331,7 +331,12 @@ export const useSwarmStore = create<SwarmState>()(
         return {
           ...current,
           ...p,
-          destinations: { ...DEFAULT_DESTINATIONS, ...p.destinations },
+          destinations: {
+            ...DEFAULT_DESTINATIONS,
+            ...p.destinations,
+            redditUser: p.destinations?.redditUser || DEFAULT_DESTINATIONS.redditUser,
+            xHandle: p.destinations?.xHandle || DEFAULT_DESTINATIONS.xHandle,
+          },
         };
       },
     },

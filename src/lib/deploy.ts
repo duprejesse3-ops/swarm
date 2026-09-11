@@ -11,7 +11,7 @@ export type DeployTarget = {
 
 export const DEFAULT_DESTINATIONS: Destinations = {
   xHandle: "DupreJesse14633",
-  redditUser: "",
+  redditUser: "MultiNicheAI81",
   redditSub: "smallbusiness",
 };
 
@@ -28,7 +28,7 @@ export const REDDIT_SUBS = [
 export function destOf(dest?: Destinations | null): Destinations {
   return {
     xHandle: stripAt(dest?.xHandle || DEFAULT_DESTINATIONS.xHandle),
-    redditUser: stripAt(dest?.redditUser || ""),
+    redditUser: stripAt(dest?.redditUser || DEFAULT_DESTINATIONS.redditUser),
     redditSub: stripSub(dest?.redditSub || DEFAULT_DESTINATIONS.redditSub),
   };
 }

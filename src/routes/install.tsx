@@ -108,8 +108,9 @@ function InstallPage() {
         <CardContent className="pt-5">
           <h2 className="text-lg font-medium">X and Reddit destinations</h2>
           <p className="mt-2 text-sm text-muted">
-            Go live opens compose on the account already signed in on this phone. X is prefilled as
-            @DupreJesse14633. Add Reddit so listings land in the right community.
+            Go live opens compose on the account already signed in on this phone. X is
+            @DupreJesse14633. Reddit is u/MultiNicheAI81. Pick the community listings should land
+            in.
           </p>
           <div className="mt-5">
             <DestinationsConfig />
