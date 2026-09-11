@@ -24,7 +24,7 @@ export function OrganismCard({
       type="button"
       onClick={onSelect}
       className={cn(
-        "w-full rounded-xl p-4 text-left shadow-[var(--shadow-border)] transition-[box-shadow,background-color] duration-150",
+        "w-full max-w-full overflow-hidden rounded-xl p-4 text-left shadow-[var(--shadow-border)] transition-[box-shadow,background-color] duration-150",
         selected ? "bg-elevated shadow-[var(--shadow-border-hover)]" : "bg-surface hover:bg-elevated",
         dead && "opacity-50",
       )}
@@ -35,12 +35,12 @@ export function OrganismCard({
             <Badge variant={organism.status === "champion" ? "accent" : dead ? "danger" : "default"}>
               {organism.status}
             </Badge>
-            <span className="font-mono text-[10px] uppercase tracking-widest text-subtle">
+            <span className="min-w-0 font-mono text-[10px] uppercase tracking-widest text-subtle">
               {channelLabel(organism.channel)} · gen {organism.generation}
             </span>
           </div>
-          <h3 className="mt-2 text-sm font-medium leading-snug">{organism.headline}</h3>
-          <p className="mt-1 line-clamp-2 text-xs text-muted">{organism.body}</p>
+          <h3 className="mt-2 text-sm font-medium leading-snug break-words">{organism.headline}</h3>
+          <p className="mt-1 line-clamp-2 text-xs text-muted break-words">{organism.body}</p>
         </div>
         <div className="shrink-0 text-right">
           <div className="font-mono text-lg tabular-nums text-accent">
@@ -55,7 +55,7 @@ export function OrganismCard({
         <span>{organism.conversions} conv</span>
         <span>{formatMoney(organism.spend)}</span>
       </div>
-      <p className="mt-2 truncate font-mono text-[10px] text-subtle">
+      <p className="mt-2 min-w-0 truncate font-mono text-[10px] text-subtle">
         {product?.name} · {organism.sku}
       </p>
     </button>

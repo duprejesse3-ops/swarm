@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Download, Dna, Hexagon, Library, Package, Radar, LayoutTemplate } from "lucide-react";
+import { Download, Dna, Ellipsis, Hexagon, Library, Package, Radar, LayoutTemplate } from "lucide-react";
 import { Toaster } from "sonner";
 import { cn } from "@/lib/utils";
 import { useSwarmStore } from "@/lib/store";
@@ -18,6 +18,9 @@ const NAV = [
   { to: "/product", label: "Product", icon: Package, key: "6" },
 ] as const;
 
+const PRIMARY = NAV.slice(0, 4);
+const MORE = NAV.slice(4);
+
 export function Shell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
@@ -27,6 +30,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const autopilot = useSwarmStore((s) => s.autopilot);
   const setAutopilot = useSwarmStore((s) => s.setAutopilot);
   const [standalone, setStandalone] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -46,6 +50,10 @@ export function Shell({ children }: { children: ReactNode }) {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    setMoreOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     const id = window.setInterval(() => {
@@ -82,10 +90,12 @@ export function Shell({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [navigate, setAutopilot]);
 
+  const moreActive = MORE.some((n) => n.to === pathname) || pathname === "/install";
+
   return (
     <TooltipProvider>
       <div
-        className={cn("min-h-dvh bg-bg text-fg", standalone && "standalone")}
+        className={cn("min-h-dvh overflow-x-hidden bg-bg text-fg", standalone && "standalone")}
         data-standalone={standalone ? "true" : "false"}
       >
         <header className="app-header sticky top-0 z-40 border-b border-border bg-bg/90 backdrop-blur-sm">
@@ -148,7 +158,7 @@ export function Shell({ children }: { children: ReactNode }) {
           </div>
         </header>
         <main className="mx-auto w-full max-w-7xl px-4 pt-6 pb-6">{children}</main>
-        <footer className="border-t border-border pb-24 md:pb-6">
+        <footer className="border-t border-border pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] lg:pb-6">
           <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-5 sm:flex-row sm:items-center sm:justify-between">
             <p className="font-mono text-[10px] uppercase tracking-widest text-subtle">{COPYRIGHT}</p>
             <p className="text-xs text-subtle">
@@ -165,9 +175,40 @@ export function Shell({ children }: { children: ReactNode }) {
             </p>
           </div>
         </footer>
-        <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-bg/95 lg:hidden">
-          <div className="grid grid-cols-6">
-            {NAV.map((item) => {
+        <nav className="app-tabbar fixed inset-x-0 bottom-0 z-50 border-t border-border bg-bg lg:hidden">
+          {moreOpen ? (
+            <div className="grid grid-cols-3 gap-1 border-b border-border px-2 py-2">
+              {MORE.map((item) => {
+                const Icon = item.icon;
+                const active = pathname === item.to;
+                return (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    className={cn(
+                      "flex min-h-12 items-center justify-center gap-2 rounded-md text-xs",
+                      active ? "bg-elevated text-accent" : "text-muted",
+                    )}
+                  >
+                    <Icon className="size-4" />
+                    {item.label}
+                  </Link>
+                );
+              })}
+              <Link
+                to="/install"
+                className={cn(
+                  "flex min-h-12 items-center justify-center gap-2 rounded-md text-xs",
+                  pathname === "/install" ? "bg-elevated text-accent" : "text-muted",
+                )}
+              >
+                <Download className="size-4" />
+                Install
+              </Link>
+            </div>
+          ) : null}
+          <div className="grid grid-cols-5">
+            {PRIMARY.map((item) => {
               const active = pathname === item.to;
               const Icon = item.icon;
               return (
@@ -175,20 +216,33 @@ export function Shell({ children }: { children: ReactNode }) {
                   key={item.to}
                   to={item.to}
                   className={cn(
-                    "flex min-h-14 flex-col items-center justify-center gap-1 text-[10px] uppercase tracking-wide",
+                    "flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 text-[10px] uppercase tracking-wide",
                     active ? "text-accent" : "text-muted",
                   )}
                 >
                   <Icon className="size-4" />
-                  {item.label}
+                  <span className="max-w-full truncate px-0.5">{item.label}</span>
                 </Link>
               );
             })}
+            <button
+              type="button"
+              onClick={() => setMoreOpen((v) => !v)}
+              className={cn(
+                "flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 text-[10px] uppercase tracking-wide",
+                moreOpen || moreActive ? "text-accent" : "text-muted",
+              )}
+              aria-expanded={moreOpen}
+              aria-label="More"
+            >
+              <Ellipsis className="size-4" />
+              <span>More</span>
+            </button>
           </div>
         </nav>
         <Toaster
           theme="dark"
-          position="bottom-right"
+          position="top-center"
           toastOptions={{
             className: "!bg-elevated !text-fg !border-border",
           }}

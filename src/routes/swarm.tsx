@@ -23,6 +23,7 @@ function SwarmBoard() {
   const tick = useSwarmStore((s) => s.tick);
   const setBudget = useSwarmStore((s) => s.setBudget);
   const [swarmId, setSwarmId] = useState(swarms[0]?.id ?? "");
+  const [showKilled, setShowKilled] = useState(false);
   const swarm = swarms.find((s) => s.id === swarmId) ?? swarms[0];
   const list = useMemo(
     () =>
@@ -31,11 +32,16 @@ function SwarmBoard() {
         .sort((a, b) => {
           if (a.status === "killed" && b.status !== "killed") return 1;
           if (b.status === "killed" && a.status !== "killed") return -1;
+          if (a.status === "champion" && b.status !== "champion") return -1;
+          if (b.status === "champion" && a.status !== "champion") return 1;
           return b.fitness - a.fitness;
         }),
     [organisms, swarm],
   );
-  const selected = organisms.find((o) => o.id === selectedId) ?? list[0];
+  const live = useMemo(() => list.filter((o) => o.status !== "killed"), [list]);
+  const dead = useMemo(() => list.filter((o) => o.status === "killed"), [list]);
+  const selected =
+    organisms.find((o) => o.id === selectedId) ?? live[0] ?? list[0];
   const stats = totals(list);
 
   async function copyPacket() {
@@ -64,6 +70,9 @@ function SwarmBoard() {
           <p className="mt-1 text-sm text-muted">
             Generation {swarm.generation} · {hoursLabel(swarm.simulatedHours)}
           </p>
+          <p className="mt-2 max-w-xl text-sm text-muted">
+            Killed is not a crash. Autopilot discards losers and keeps champions. Live ads stay up top.
+          </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => toggleRun(swarm.id)}>
@@ -80,7 +89,7 @@ function SwarmBoard() {
       </div>
 
       {swarms.length > 1 ? (
-        <div className="flex gap-2 overflow-x-auto pb-1">
+        <div className="flex gap-2 overflow-x-auto pb-1 min-w-0">
           {swarms.map((s) => (
             <button
               key={s.id}
@@ -114,19 +123,64 @@ function SwarmBoard() {
         />
       </label>
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_0.95fr]">
-        <div className="flex flex-col gap-3">
-          {list.map((o) => (
-            <OrganismCard
-              key={o.id}
-              organism={o}
-              selected={selected?.id === o.id}
-              onSelect={() => select(o.id)}
-            />
-          ))}
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge variant="accent">{live.length} live</Badge>
+        <Badge variant={dead.length ? "danger" : "default"}>{dead.length} killed</Badge>
+      </div>
+
+      <div className="grid min-w-0 gap-6 lg:grid-cols-[1fr_0.95fr]">
+        <div className="flex min-w-0 flex-col gap-3">
+          {live.length === 0 ? (
+            <Card>
+              <CardContent className="pt-5">
+                <p className="text-sm text-muted">
+                  No live organisms in this swarm. Autopilot will hijack a fresh intent from Radar.
+                </p>
+                <Button asChild className="mt-4">
+                  <Link to="/">Open radar</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            live.map((o) => (
+              <OrganismCard
+                key={o.id}
+                organism={o}
+                selected={selected?.id === o.id}
+                onSelect={() => select(o.id)}
+              />
+            ))
+          )}
+          {dead.length > 0 ? (
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => setShowKilled((v) => !v)}
+                className="flex min-h-11 w-full items-center justify-between rounded-xl bg-surface px-4 text-left text-sm shadow-[var(--shadow-border)]"
+              >
+                <span className="text-muted">
+                  {showKilled ? "Hide killed losers" : `Show ${dead.length} killed losers`}
+                </span>
+                <span className="font-mono text-[10px] uppercase tracking-widest text-subtle">
+                  {showKilled ? "Open" : "Closed"}
+                </span>
+              </button>
+              {showKilled
+                ? dead.map((o) => (
+                    <div key={o.id} className="mt-3">
+                      <OrganismCard
+                        organism={o}
+                        selected={selected?.id === o.id}
+                        onSelect={() => select(o.id)}
+                      />
+                    </div>
+                  ))
+                : null}
+            </div>
+          ) : null}
         </div>
         {selected ? (
-          <div className="lg:sticky lg:top-20 h-fit">
+          <div className="h-fit min-w-0 lg:sticky lg:top-20">
             <div className="mb-3 flex items-center justify-between">
               <Badge>{channelLabel(selected.channel)}</Badge>
               <Button asChild variant="ghost" size="sm">
@@ -143,7 +197,7 @@ function SwarmBoard() {
                   href={selected.landingUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-3 block truncate font-mono text-[11px] text-accent hover:underline"
+                  className="mt-3 block min-w-0 truncate font-mono text-[11px] text-accent hover:underline"
                 >
                   {selected.landingUrl}
                 </a>

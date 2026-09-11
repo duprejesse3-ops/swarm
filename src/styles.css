@@ -53,6 +53,7 @@
   html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    scroll-padding-bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
   }
 
   html,
@@ -160,6 +161,10 @@ body {
 .app-header label {
   app-region: no-drag;
   -webkit-app-region: no-drag;
+}
+
+.app-tabbar {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 @media (display-mode: standalone), (display-mode: window-controls-overlay) {
