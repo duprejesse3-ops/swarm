@@ -28,7 +28,7 @@ export function Shell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
-    void useSwarmStore.persist.rehydrate().then(() => {
+    void Promise.resolve(useSwarmStore.persist.rehydrate()).then(() => {
       if (cancelled) return;
       useSwarmStore.getState().setHydrated();
       if (useSwarmStore.getState().autopilot) {

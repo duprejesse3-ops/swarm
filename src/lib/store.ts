@@ -63,7 +63,18 @@ function log(kind: Activity["kind"], text: string): Activity {
   return { id: uid("log"), ts: Date.now(), kind, text };
 }
 
-function initial() {
+function initial(): Pick<
+  SwarmState,
+  | "swarms"
+  | "organisms"
+  | "pulses"
+  | "selectedId"
+  | "pulseCursor"
+  | "autopilot"
+  | "activities"
+  | "lastAutoHijackAt"
+  | "lastAutoEvolveAt"
+> {
   return {
     swarms: seedSwarms(),
     organisms: markChampions(seedOrganisms()),
