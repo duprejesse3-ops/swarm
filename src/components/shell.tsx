@@ -4,6 +4,7 @@ import { Download, Dna, Hexagon, Library, Package, Radar, LayoutTemplate } from 
 import { Toaster } from "sonner";
 import { cn } from "@/lib/utils";
 import { useSwarmStore } from "@/lib/store";
+import { BRAND, COPYRIGHT, SITE } from "@/lib/catalog";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Switch } from "@/components/ui/switch";
 import { armInstallCapture, isStandalone } from "@/lib/install";
@@ -96,7 +97,7 @@ export function Shell({ children }: { children: ReactNode }) {
               <span className="leading-none">
                 <span className="block font-medium tracking-tight">SWARM</span>
                 <span className="block font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
-                  MultiNiche AI
+                  {BRAND}
                 </span>
               </span>
             </Link>
@@ -146,7 +147,24 @@ export function Shell({ children }: { children: ReactNode }) {
             </div>
           </div>
         </header>
-        <main className="mx-auto w-full max-w-7xl px-4 pt-6 pb-24 md:pb-10">{children}</main>
+        <main className="mx-auto w-full max-w-7xl px-4 pt-6 pb-6">{children}</main>
+        <footer className="border-t border-border pb-24 md:pb-6">
+          <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-5 sm:flex-row sm:items-center sm:justify-between">
+            <p className="font-mono text-[10px] uppercase tracking-widest text-subtle">{COPYRIGHT}</p>
+            <p className="text-xs text-subtle">
+              SWARM is a product of{" "}
+              <a
+                href={SITE}
+                target="_blank"
+                rel="noreferrer"
+                className="text-muted underline-offset-4 hover:text-fg hover:underline"
+              >
+                multinicheai.com
+              </a>
+              . One-time license. No subscription.
+            </p>
+          </div>
+        </footer>
         <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-bg/95 lg:hidden">
           <div className="grid grid-cols-6">
             {NAV.map((item) => {

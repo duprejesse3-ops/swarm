@@ -1,4 +1,4 @@
-import { SITE, SWARM_REPO, SWARM_SKU } from "./catalog";
+import { BRAND, COPYRIGHT, COPYRIGHT_YEAR, SITE, SWARM_REPO, SWARM_SKU } from "./catalog";
 import type { Format, Product } from "./types";
 
 export type SiteCategory = "prompts" | "automations" | "templates" | "agents" | "connectors" | "host";
@@ -295,6 +295,7 @@ export function listingFor(product: Product): SiteListing {
   </dl>
   <p>${priceLabel}</p>
   <a href="${cartUrl}">Add to cart in store →</a>
+  <p>${COPYRIGHT}</p>
 </article>`;
   const catalogMts = `{ sku: '${product.sku}', name: '${jsEscape(product.name)}', category: '${category}', niche: '${niche}', format: '${jsEscape(siteFormat)}', price: ${product.price}, blurb: '${jsEscape(blurb)}', spec: '${jsEscape(spec)}' },`;
   const sql = `-- Adds ${sqlEscape(product.name)} (${product.sku}) to the catalog.
@@ -340,6 +341,8 @@ ON CONFLICT (sku) DO NOTHING;`;
     "## FAQ",
     ...faq.flatMap((item) => [`### ${item.q}`, item.a, ""]),
     product.sku === SWARM_SKU ? `Source: ${SWARM_REPO}` : `Product: ${productUrl}`,
+    "",
+    COPYRIGHT,
   ].join("\n");
   const jsonLd = JSON.stringify(
     {
@@ -349,7 +352,10 @@ ON CONFLICT (sku) DO NOTHING;`;
       sku: product.sku,
       category: categoryLabel,
       description: blurb,
-      brand: { "@type": "Brand", name: "MULTINICHE AI" },
+      brand: { "@type": "Brand", name: BRAND },
+      copyrightHolder: { "@type": "Organization", name: BRAND, url: SITE },
+      copyrightNotice: COPYRIGHT,
+      copyrightYear: COPYRIGHT_YEAR,
       image: `${SITE}/multiniche-ai-og.png`,
       url: productUrl,
       offers: {
@@ -364,7 +370,7 @@ ON CONFLICT (sku) DO NOTHING;`;
     null,
     2,
   );
-  const metaTitle = `${product.name} — ${categoryLabel} | MULTINICHE AI`;
+  const metaTitle = `${product.name} — ${categoryLabel} | ${BRAND}`;
   const metaDescription = `${blurb} ${priceLabel} one-time.`;
   const bundle = [
     "# MultiNiche listing kit",
@@ -391,6 +397,8 @@ ON CONFLICT (sku) DO NOTHING;`;
     `Cart: ${cartUrl}`,
     `Page: ${productUrl}`,
     `Tools: ${toolsUrl}`,
+    "",
+    COPYRIGHT,
   ].join("\n");
   return {
     product,

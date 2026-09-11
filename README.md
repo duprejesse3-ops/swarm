@@ -1,6 +1,6 @@
 # SWARM
 
-Intent-hijack ad organism for [MultiNiche AI](https://multinicheai.com).
+Intent-hijack ad organism for [MULTINICHE AI](https://multinicheai.com).
 
 Most ads try to create demand. SWARM hijacks demand that already exists: it maps live pain-utterances to a SKU, spawns proof-first micro-ads (search intercept, conversation native, proof-loop spec sheets, shadow listings), then evolves winners and kills losers.
 
@@ -52,3 +52,11 @@ The app listens on `0.0.0.0:8080`. Autopilot uses the local genome only. Optiona
 - Running swarms tick on their own. Ripe swarms evolve. Losers die.
 - Lab state (swarms, organisms, pulses, log) persists in the browser.
 - Copy stays proof-first. Deploy packets still copy out of Studio / Swarm when you are ready to paste into Google, X, or a thread.
+
+## Copyright
+
+© 2026 MULTINICHE AI. All rights reserved.
+
+SWARM Intent Autopilot (SKU AI-AB-070) is a product of [MULTINICHE AI](https://multinicheai.com).
+See [LICENSE](LICENSE).
+

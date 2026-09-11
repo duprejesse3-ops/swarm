@@ -1,6 +1,9 @@
 import type { Product } from "./types";
 
 export const SITE = "https://multinicheai.com";
+export const BRAND = "MULTINICHE AI";
+export const COPYRIGHT_YEAR = 2026;
+export const COPYRIGHT = `© ${COPYRIGHT_YEAR} ${BRAND}. All rights reserved.`;
 export const SWARM_SKU = "AI-AB-070";
 export const SWARM_REPO = "https://github.com/duprejesse3-ops/swarm";
 

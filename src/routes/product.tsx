@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { Check, Copy, Download, ExternalLink, Package } from "lucide-react";
-import { PRODUCTS, SITE, SWARM_REPO, SWARM_SKU } from "@/lib/catalog";
+import { PRODUCTS, SITE, SWARM_REPO, SWARM_SKU, COPYRIGHT } from "@/lib/catalog";
 import { listingFor } from "@/lib/listing";
 import { copyToClipboard, downloadText } from "@/lib/utils";
 import { HijackPanel } from "@/components/hijack-panel";
@@ -111,6 +111,9 @@ function ProductPage() {
                 </Button>
               </div>
               <p className="mt-3 text-xs text-subtle">Digital delivery is immediate.</p>
+              <p className="mt-2 font-mono text-[10px] uppercase tracking-widest text-subtle">
+                {COPYRIGHT}
+              </p>
               <div className="mt-4 flex flex-wrap gap-2">
                 {isSwarm ? (
                   <Button asChild variant="outline">
