@@ -51,7 +51,7 @@ function CatalogPage() {
           </p>
           <p className="mt-1 font-medium">SWARM is a product on the site, not only a lab</p>
           <p className="mt-1 text-sm text-muted">
-            Spec sheet, catalog HTML, JSON-LD, shop CSV — ready to paste.
+            Spec sheet, SQL, live proof, llms.txt — ready to paste.
           </p>
         </div>
         <span className="text-sm text-accent">Open the listing kit</span>

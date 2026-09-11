@@ -1,10 +1,10 @@
 import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { Check, Copy, Package } from "lucide-react";
+import { Check, Copy, Download, ExternalLink, Package } from "lucide-react";
 import { PRODUCTS, SITE, SWARM_REPO, SWARM_SKU } from "@/lib/catalog";
 import { listingFor } from "@/lib/listing";
-import { copyToClipboard } from "@/lib/utils";
+import { copyToClipboard, downloadText } from "@/lib/utils";
 import { HijackPanel } from "@/components/hijack-panel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,10 +14,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 export const Route = createFileRoute("/product")({ component: ProductPage });
 
 const TABS = [
-  { id: "catalog", label: "Catalog row" },
+  { id: "sql", label: "SQL" },
+  { id: "catalog", label: "catalog.mts" },
+  { id: "proof", label: "Live proof" },
+  { id: "llms", label: "llms.txt" },
   { id: "page", label: "Product page" },
-  { id: "schema", label: "Schema" },
-  { id: "shop", label: "Shop CSV" },
+  { id: "schema", label: "JSON-LD" },
 ] as const;
 
 function ProductPage() {
@@ -44,9 +46,9 @@ function ProductPage() {
         <Badge variant="accent">{product.sku} · {listing.priceLabel}</Badge>
         <h1 className="mt-4 text-4xl font-medium tracking-tight">Package it as a product for the site</h1>
         <p className="mt-3 text-base leading-relaxed text-muted">
-          Spec sheet, not a pitch. Copy a catalog row, a product page, JSON-LD, or a shop CSV and
-          paste it onto {SITE.replace("https://", "")}. SWARM is SKU {SWARM_SKU} — Autopilot can sell
-          it the same way it sells every other instrument.
+          Spec sheet in the exact MultiNiche fields: Built for, Category, Format, Spec, cart URL.
+          Copy SQL, fallback catalog, live proof, or llms.txt and paste. SWARM is SKU {SWARM_SKU}
+          under Store & Site Owners.
         </p>
       </div>
 
@@ -69,37 +71,47 @@ function ProductPage() {
           {copied === "Full kit" ? <Check className="size-4" /> : <Copy className="size-4" />}
           Copy full kit
         </Button>
+        <Button
+          variant="outline"
+          onClick={() => {
+            downloadText(`${product.sku}-listing.md`, listing.bundle);
+            toast.success("Downloaded listing kit");
+          }}
+        >
+          <Download className="size-4" />
+          Download kit
+        </Button>
       </div>
 
       <section className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
         <Card>
           <CardContent className="pt-5">
-            <p className="font-mono text-[10px] uppercase tracking-widest text-subtle">Live listing</p>
+            <p className="font-mono text-[10px] uppercase tracking-widest text-subtle">
+              Live listing · {SITE.replace("https://", "")}
+            </p>
             <div className="mt-4 rounded-lg bg-elevated p-5 shadow-[var(--shadow-border)]">
-              <div className="flex items-center justify-between gap-3">
-                <span className="font-mono text-[11px] uppercase tracking-widest text-subtle">
-                  {product.sku}
-                </span>
-                <span className="font-mono text-sm tabular-nums">{listing.priceLabel}</span>
-              </div>
+              <p className="font-mono text-[11px] uppercase tracking-widest text-subtle">
+                {listing.categoryLabel} {product.sku} New
+              </p>
               <h2 className="mt-3 text-2xl font-medium tracking-tight">{product.name}</h2>
               <p className="mt-2 text-sm leading-relaxed text-muted">{listing.blurb}</p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <Badge>{product.format}</Badge>
-                <Badge variant="accent">{product.role}</Badge>
-                {isSwarm ? <Badge variant="success">This app</Badge> : null}
-              </div>
               <dl className="mt-5 space-y-3 border-t border-border pt-4 text-sm">
-                <Spec k="Job" v={product.job} />
-                <Spec k="Proof" v={product.proof} />
-                <Spec k="Pain" v={product.pain} />
-                <Spec k="Delivery" v={listing.includes[0] ?? product.format} />
-                <Spec k="Cost" v={`${listing.priceLabel} one-time · 15% off 3+ tools`} />
+                <Spec k="Built for" v={listing.nicheLabel} />
+                <Spec k="Category" v={listing.categoryLabel} />
+                <Spec k="Format" v={listing.siteFormat} />
+                <Spec k="Spec" v={listing.spec} />
               </dl>
-              <div className="mt-5 flex flex-wrap gap-2">
-                <Button onClick={() => void copy("Catalog row", listing.catalogHtml)}>
-                  + Add
+              <div className="mt-5 flex flex-wrap items-center gap-3">
+                <p className="font-mono text-xl tabular-nums">{listing.priceLabel}</p>
+                <Button asChild>
+                  <a href={listing.cartUrl} target="_blank" rel="noreferrer">
+                    Add to cart in store
+                    <ExternalLink className="size-4" />
+                  </a>
                 </Button>
+              </div>
+              <p className="mt-3 text-xs text-subtle">Digital delivery is immediate.</p>
+              <div className="mt-4 flex flex-wrap gap-2">
                 {isSwarm ? (
                   <Button asChild variant="outline">
                     <a href={SWARM_REPO} target="_blank" rel="noreferrer">
@@ -108,7 +120,7 @@ function ProductPage() {
                   </Button>
                 ) : (
                   <Button asChild variant="outline">
-                    <a href={`${SITE}/?sku=${product.sku}`} target="_blank" rel="noreferrer">
+                    <a href={listing.productUrl} target="_blank" rel="noreferrer">
                       Open site
                     </a>
                   </Button>
@@ -120,9 +132,6 @@ function ProductPage() {
                 ) : null}
               </div>
             </div>
-            <p className="mt-3 text-xs text-subtle">
-              + Add copies the catalog HTML. Paste it into the MultiNiche catalog block.
-            </p>
           </CardContent>
         </Card>
 
@@ -168,12 +177,35 @@ function ProductPage() {
         </div>
       </section>
 
+      {listing.related.length ? (
+        <section>
+          <h2 className="text-lg font-medium">Sits next to these on Store & Site Owners</h2>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            {listing.related.map((item) => (
+              <a
+                key={item.sku}
+                href={`${SITE}/product/${item.sku}`}
+                target="_blank"
+                rel="noreferrer"
+                className="rounded-xl bg-surface p-4 shadow-[var(--shadow-border)] transition-shadow hover:shadow-[var(--shadow-border-hover)]"
+              >
+                <p className="font-medium">{item.name}</p>
+                <p className="mt-1 text-sm text-muted">{item.blurb}</p>
+                <p className="mt-2 font-mono text-xs tabular-nums text-subtle">
+                  {item.price} · {item.sku}
+                </p>
+              </a>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       <section>
         <div className="mb-3 flex items-center justify-between gap-3">
           <h2 className="text-lg font-medium">Paste-ready packets</h2>
           <p className="font-mono text-[10px] uppercase tracking-widest text-subtle">{listing.handle}</p>
         </div>
-        <Tabs defaultValue="catalog">
+        <Tabs defaultValue="sql">
           <TabsList className="h-auto w-full flex-wrap justify-start">
             {TABS.map((tab) => (
               <TabsTrigger key={tab.id} value={tab.id}>
@@ -181,10 +213,12 @@ function ProductPage() {
               </TabsTrigger>
             ))}
           </TabsList>
-          <Packet tab="catalog" label="Catalog HTML" text={listing.catalogHtml} copied={copied} onCopy={copy} />
+          <Packet tab="sql" label="SQL" text={listing.sql} copied={copied} onCopy={copy} />
+          <Packet tab="catalog" label="catalog.mts" text={listing.catalogMts} copied={copied} onCopy={copy} />
+          <Packet tab="proof" label="Live proof" text={listing.liveProof} copied={copied} onCopy={copy} />
+          <Packet tab="llms" label="llms.txt" text={listing.llmsLine} copied={copied} onCopy={copy} />
           <Packet tab="page" label="Product page" text={listing.pageMarkdown} copied={copied} onCopy={copy} />
           <Packet tab="schema" label="JSON-LD" text={listing.jsonLd} copied={copied} onCopy={copy} />
-          <Packet tab="shop" label="Shop CSV" text={listing.shopCsv} copied={copied} onCopy={copy} />
         </Tabs>
       </section>
     </div>
@@ -216,7 +250,7 @@ function Packet({
   return (
     <TabsContent value={tab}>
       <div className="flex justify-end">
-        <Button size="sm" variant="outline" onClick={() => onCopy(label, text)}>
+        <Button size="sm" variant="outline" onClick={() => void onCopy(label, text)}>
           {copied === label ? <Check className="size-4" /> : <Copy className="size-4" />}
           Copy
         </Button>

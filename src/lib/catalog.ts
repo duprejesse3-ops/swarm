@@ -24,7 +24,7 @@ export const PRODUCTS: Product[] = [
       "Buying Google ads for AI tools is a tax",
       "Need ads that intercept the job people already typed",
     ],
-    landing: "/",
+    landing: "/product/AI-AB-070",
   },
   {
     sku: "AI-AB-002",

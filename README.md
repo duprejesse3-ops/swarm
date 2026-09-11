@@ -27,9 +27,11 @@ This is a progressive web app. There is **no Play Store APK** and **no Microsoft
 
 ## Product (multinicheai.com)
 
-SWARM is SKU **AI-AB-070** — Automation, Store & Site Owners, **$79.00** one-time, bundle-eligible.
+SWARM is SKU **[AI-AB-070](https://multinicheai.com/product/AI-AB-070)** — Automation Blueprints, Store & Site Owners, **$79.00** one-time.
 
-The in-app **Product** page emits a spec-sheet listing: catalog HTML, product page markdown, JSON-LD, and shop CSV. Paste onto [multinicheai.com](https://multinicheai.com). Autopilot can hijack demand for this SKU the same way it does for every other instrument.
+- Cart: [multinicheai.com/?product=AI-AB-070](https://multinicheai.com/?product=AI-AB-070)
+- Tools: [Store & Site Owners](https://multinicheai.com/tools/stores)
+- The in-app **Product** page emits SQL, `catalog.mts`, live-proof, llms.txt, and JSON-LD in the store's own fields.
 
 ### Source zip
 
