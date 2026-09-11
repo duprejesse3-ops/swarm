@@ -38,41 +38,52 @@ export function buildLanding(product: Product, channel: Channel, swarmId: string
 
 export function localCopy(product: Product, intent: string, channel: Channel, salt: number): GeneratedCopy {
   const cta = pick(CTAS, salt);
+  const variant = salt % 3;
+  const proofLead = product.proof.split("—")[0]!.trim();
+  const intentLine = intent.replace(/[.?!]$/, "");
   if (channel === "search") {
-    return {
-      channel,
-      headline: `${product.proof.split("—")[0]!.trim()}`,
-      body: `${product.job}. ${product.pain} Spec sheet, not a pitch. $${product.price}, one-time.`,
-      proofHook: product.proof,
-      cta,
-    };
+    const headlines = [
+      proofLead,
+      `${product.name} — $${product.price} one-time`,
+      intentLine,
+    ];
+    const bodies = [
+      `${product.job}. ${product.pain} Spec sheet, not a pitch. $${product.price}, one-time.`,
+      `${product.proof}. ${product.job}.`,
+      `Not a Google tax. ${product.proof}. $${product.price}, watch it on your task.`,
+    ];
+    return { channel, headline: headlines[variant]!, body: bodies[variant]!, proofHook: product.proof, cta };
   }
   if (channel === "conversation") {
-    return {
-      channel,
-      headline: intent.replace(/[.?!]$/, ""),
-      body: `${product.proof}. Not a wrapper — ${product.format.toLowerCase()} you keep. $${product.price}, watch it run first.`,
-      proofHook: product.proof,
-      cta,
-    };
+    const headlines = [
+      intentLine,
+      product.pain.replace(/[.?!]$/, ""),
+      product.job.replace(/[.?!]$/, ""),
+    ];
+    const bodies = [
+      `${product.proof}. Not a wrapper — ${product.format.toLowerCase()} you keep. $${product.price}, watch it run first.`,
+      `I ran ${product.name} on the actual job. ${product.proof}. Public run: ${SITE}/proof`,
+      `${product.proof}. $${product.price} one-time, no subscription.`,
+    ];
+    return { channel, headline: headlines[variant]!, body: bodies[variant]!, proofHook: product.proof, cta };
   }
   if (channel === "proof") {
-    return {
-      channel,
-      headline: `SPEC ${product.sku}`,
-      body: `Job: ${product.job}. Proof: ${product.proof}. Cost: $${product.price} perpetual. First run is free to watch.`,
-      proofHook: product.proof,
-      cta: "Watch the run",
-    };
+    const headlines = [`SPEC ${product.sku}`, `SPEC ${product.sku} · $${product.price}`, `${product.name} spec`];
+    const bodies = [
+      `Job: ${product.job}. Proof: ${product.proof}. Cost: $${product.price} perpetual. First run is free to watch.`,
+      `Built for ${product.role}. ${product.proof}. $${product.price} one-time.`,
+      `${product.job}. Watch it on your own task before you pay. $${product.price}.`,
+    ];
+    return { channel, headline: headlines[variant]!, body: bodies[variant]!, proofHook: product.proof, cta: "Watch the run" };
   }
   const article = /^[aeiou]/i.test(product.format) ? "an" : "a";
-  return {
-    channel,
-    headline: product.job,
-    body: `${product.name} is ${article} ${product.format.toLowerCase()} — you can watch it run on your own task before paying. $${product.price}, no subscription.`,
-    proofHook: product.proof,
-    cta,
-  };
+  const headlines = [product.job, proofLead, `${product.name} vs the wrapper`];
+  const bodies = [
+    `${product.name} is ${article} ${product.format.toLowerCase()} — you can watch it run on your own task before paying. $${product.price}, no subscription.`,
+    `${product.proof}. Sits next to the “what should I use” thread. $${product.price}.`,
+    `Not another summarizer. ${product.job}. $${product.price} one-time.`,
+  ];
+  return { channel, headline: headlines[variant]!, body: bodies[variant]!, proofHook: product.proof, cta };
 }
 
 export function copyToOrganism(opts: {
@@ -117,16 +128,16 @@ export function spawnLocalSwarm(opts: {
   const per = opts.perChannel ?? 2;
   const gen = opts.generation ?? 1;
   const out: Organism[] = [];
+  const used = new Set<string>();
   CHANNELS.forEach((ch, ci) => {
     for (let i = 0; i < per; i++) {
-      const copy = localCopy(opts.product, opts.intent, ch.id, ci * 7 + i * 3 + gen);
-      if (i === 1 && ch.id === "search") {
-        copy.headline = `${opts.product.name} — $${opts.product.price} one-time`;
-        copy.body = `${opts.product.proof}. ${opts.product.job}.`;
+      let copy = localCopy(opts.product, opts.intent, ch.id, ci * 7 + i * 3 + gen * 11);
+      let guard = 0;
+      while (used.has(headlineKey(copy.headline)) && guard < 6) {
+        copy = localCopy(opts.product, opts.intent, ch.id, ci * 7 + i * 3 + gen * 11 + guard + 1);
+        guard += 1;
       }
-      if (i === 1 && ch.id === "conversation") {
-        copy.body = `I ran ${opts.product.name} on the actual job. ${opts.product.proof}. Public run: ${SITE}/proof`;
-      }
+      used.add(headlineKey(copy.headline));
       out.push(
         copyToOrganism({
           copy,
@@ -139,6 +150,10 @@ export function spawnLocalSwarm(opts: {
     }
   });
   return out;
+}
+
+function headlineKey(headline: string) {
+  return headline.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 }
 
 function hash32(s: string) {
@@ -229,6 +244,33 @@ export function markChampions(organisms: Organism[]): Organism[] {
   });
 }
 
+export function cullDuplicates(organisms: Organism[]): Organism[] {
+  const kill = new Set<string>();
+  const bySwarm = new Map<string, Organism[]>();
+  for (const o of organisms) {
+    const list = bySwarm.get(o.swarmId) ?? [];
+    list.push(o);
+    bySwarm.set(o.swarmId, list);
+  }
+  for (const list of bySwarm.values()) {
+    const alive = list.filter((o) => o.status !== "killed").sort((a, b) => b.fitness - a.fitness);
+    const perChannel = new Map<Channel, number>();
+    const used = new Set<string>();
+    for (const o of alive) {
+      const key = `${o.channel}:${headlineKey(o.headline)}`;
+      const n = perChannel.get(o.channel) ?? 0;
+      if (n >= 2 || used.has(key)) {
+        kill.add(o.id);
+        continue;
+      }
+      perChannel.set(o.channel, n + 1);
+      used.add(key);
+    }
+  }
+  if (kill.size === 0) return organisms;
+  return organisms.map((o) => (kill.has(o.id) ? { ...o, status: "killed" as const } : o));
+}
+
 export function evolveLocal(opts: {
   swarmId: string;
   generation: number;
@@ -237,53 +279,40 @@ export function evolveLocal(opts: {
   const alive = opts.organisms
     .filter((o) => o.swarmId === opts.swarmId && o.status !== "killed")
     .sort((a, b) => b.fitness - a.fitness);
-  if (alive.length < 2) return { killed: [], born: [] };
-  const cut = Math.max(1, Math.floor(alive.length * 0.5));
-  const losers = alive.slice(cut);
-  const winners = alive.slice(0, Math.max(2, Math.ceil(alive.length * 0.5)));
-  const killed = losers.map((o) => o.id);
+  if (alive.length === 0) return { killed: [], born: [] };
+  const champion = alive[0]!;
+  const product = productBySku(champion.sku) ?? PRODUCTS[0]!;
+  const intent = champion.targetIntent;
+  const keep = new Set<string>([champion.id]);
+  for (const ch of CHANNELS) {
+    const best = alive.find((o) => o.channel === ch.id);
+    if (best) keep.add(best.id);
+  }
+  const killed = alive.filter((o) => !keep.has(o.id)).map((o) => o.id);
+  const used = new Set(
+    alive.filter((o) => keep.has(o.id)).map((o) => headlineKey(o.headline)),
+  );
   const born: Organism[] = [];
-  for (let i = 0; i < winners.length; i++) {
-    const a = winners[i]!;
-    const b = winners[(i + 1) % winners.length]!;
-    const product = productBySku(a.sku) ?? PRODUCTS[0]!;
-    const mutated: GeneratedCopy = {
-      channel: a.channel,
-      headline: i % 2 === 0 ? a.headline : `${a.proofHook.split("—")[0]!.trim()}`,
-      body: i % 3 === 0 ? `${a.body} ${b.cta}.` : b.body,
-      proofHook: a.proofHook,
-      cta: i % 2 === 0 ? b.cta : a.cta,
-    };
-    if (mutated.headline.length > 90) mutated.headline = mutated.headline.slice(0, 86).trim();
-    const child = copyToOrganism({
-      copy: mutated,
-      product,
-      swarmId: opts.swarmId,
-      intent: a.targetIntent,
-      generation: opts.generation,
-      parentIds: [a.id, b.id],
-    });
-    born.push(child);
-    if (i < Math.ceil(winners.length / 3)) {
-      const crossed: GeneratedCopy = {
-        channel: b.channel,
-        headline: a.headline,
-        body: b.body,
-        proofHook: a.proofHook,
-        cta: b.cta,
-      };
+  CHANNELS.forEach((ch, i) => {
+    const parent = alive.find((o) => o.channel === ch.id) ?? champion;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const copy = localCopy(product, intent, ch.id, opts.generation * 17 + i * 5 + attempt + 3);
+      const key = headlineKey(copy.headline);
+      if (used.has(key)) continue;
+      used.add(key);
       born.push(
         copyToOrganism({
-          copy: crossed,
-          product: productBySku(b.sku) ?? product,
+          copy,
+          product,
           swarmId: opts.swarmId,
-          intent: b.targetIntent,
+          intent,
           generation: opts.generation,
-          parentIds: [a.id, b.id],
+          parentIds: [parent.id, champion.id],
         }),
       );
+      break;
     }
-  }
+  });
   return { killed, born };
 }
 
@@ -362,30 +391,13 @@ export function seedOrganisms(): Organism[] {
     generation: 1,
     perChannel: 2,
   });
-  const notes = productBySku("AI-AG-003")!;
-  const more = spawnLocalSwarm({
-    swarmId: SEED_SWARM_ID,
-    product: notes,
-    intent: notes.utterances[0]!,
-    generation: 1,
-    perChannel: 1,
-  });
-  const seo = productBySku("AI-AG-020")!;
-  const seoOrg = spawnLocalSwarm({
-    swarmId: SEED_SWARM_ID,
-    product: seo,
-    intent: seo.utterances[0]!,
-    generation: 1,
-    perChannel: 1,
-  });
-  const all = [...base, ...more, ...seoOrg].map((o, i) => {
+  const all = base.map((o, i) => {
     const id = `org_seed_${String(i + 1).padStart(2, "0")}`;
-    const product = productBySku(o.sku)!;
     return {
       ...o,
       id,
       landingUrl: buildLanding(product, o.channel, SEED_SWARM_ID, id),
     };
   });
-  return tickOrganisms(all, 36, 48);
+  return tickOrganisms(all, 8, 48);
 }

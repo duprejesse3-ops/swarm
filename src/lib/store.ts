@@ -4,6 +4,7 @@ import { PRODUCTS, productBySku } from "./catalog";
 import {
   SEED_SWARM_ID,
   copyToOrganism,
+  cullDuplicates,
   evolveLocal,
   livePulse,
   markChampions,
@@ -49,12 +50,12 @@ function seedSwarms(): Swarm[] {
   return [
     {
       id: SEED_SWARM_ID,
-      name: "Drought intercept · inbox + notes + SEO",
+      name: "Inbox drought intercept",
       generation: 1,
       dailyBudget: 48,
       running: true,
-      startedAt: Date.now() - 36 * 3600 * 1000,
-      simulatedHours: 36,
+      startedAt: Date.now() - 8 * 3600 * 1000,
+      simulatedHours: 8,
     },
   ];
 }
@@ -138,7 +139,7 @@ export const useSwarmStore = create<SwarmState>()(
           return { ...sw, simulatedHours: sw.simulatedHours + hours };
         });
         if (next === organisms) return;
-        set({ organisms: markChampions(next), swarms: nextSwarms });
+        set({ organisms: markChampions(cullDuplicates(next)), swarms: nextSwarms });
       },
       listen: () =>
         set((s) => {
@@ -247,10 +248,12 @@ export const useSwarmStore = create<SwarmState>()(
         const killedSet = new Set(local.killed);
         set({
           swarms: swarms.map((s) => (s.id === swarmId ? { ...s, generation } : s)),
-          organisms: markChampions([
-            ...born,
-            ...organisms.map((o) => (killedSet.has(o.id) ? { ...o, status: "killed" as const } : o)),
-          ]),
+          organisms: markChampions(
+            cullDuplicates([
+              ...born,
+              ...organisms.map((o) => (killedSet.has(o.id) ? { ...o, status: "killed" as const } : o)),
+            ]),
+          ),
           selectedId: born[0]?.id ?? get().selectedId,
         });
       },
@@ -265,7 +268,7 @@ export const useSwarmStore = create<SwarmState>()(
       resetLab: () => set({ ...initial(), hydrated: true }),
     }),
     {
-      name: "swarm-mn-v2",
+      name: "swarm-mn-v3",
       skipHydration: true,
       partialize: (s) => ({
         swarms: s.swarms,
