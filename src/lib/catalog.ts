@@ -5,7 +5,7 @@ export const BRAND = "MULTINICHE AI";
 export const COPYRIGHT_YEAR = 2026;
 export const COPYRIGHT = `© ${COPYRIGHT_YEAR} ${BRAND}. All rights reserved.`;
 export const SWARM_SKU = "AI-AB-070";
-export const SWARM_REPO = "https://github.com/duprejesse3-ops/Jblessd";
+export const SWARM_REPO = "https://github.com/duprejesse3-ops/swarm";
 
 export const PRODUCTS: Product[] = [
   {
@@ -90,7 +90,7 @@ export const PRODUCTS: Product[] = [
       "Need a shutdown ritual that actually sticks",
       "Deep work system for a solo founder",
     ],
-    landing: "/",
+    landing: "/product/AI-PP-001",
   },
   {
     sku: "AI-AB-005",
@@ -111,7 +111,7 @@ export const PRODUCTS: Product[] = [
       "Need a content engine that queues itself",
       "Tired of rewriting the same idea for every channel",
     ],
-    landing: "/",
+    landing: "/product/AI-AB-005",
   },
   {
     sku: "AI-AG-020",
@@ -153,7 +153,7 @@ export const PRODUCTS: Product[] = [
       "Need hooks that match the platform rhythm",
       "Tired of 'are you struggling with' openers",
     ],
-    landing: "/",
+    landing: "/product/AI-PP-025",
   },
   {
     sku: "AI-PP-014",
@@ -174,7 +174,7 @@ export const PRODUCTS: Product[] = [
       "Landing page copy that is testable",
       "Hero section sounds like every other SaaS",
     ],
-    landing: "/",
+    landing: "/product/AI-PP-014",
   },
   {
     sku: "AI-AG-008",
@@ -216,7 +216,7 @@ export const PRODUCTS: Product[] = [
       "Need a morning digest of code review",
       "GitHub notifications are unusable",
     ],
-    landing: "/",
+    landing: "/product/AI-AB-013",
   },
   {
     sku: "AI-AG-016",
@@ -258,7 +258,7 @@ export const PRODUCTS: Product[] = [
       "Need a voice lock I can reuse",
       "Drafts come out corporate even when I am not",
     ],
-    landing: "/",
+    landing: "/product/AI-PP-011",
   },
   {
     sku: "AI-PP-029",
@@ -279,7 +279,7 @@ export const PRODUCTS: Product[] = [
       "Brand tone dies the moment we open ChatGPT",
       "Need a reusable voice prompt from samples",
     ],
-    landing: "/",
+    landing: "/product/AI-PP-029",
   },
   {
     sku: "AI-PP-006",
@@ -300,7 +300,7 @@ export const PRODUCTS: Product[] = [
       "ChatGPT mashed three papers into mush",
       "Research prompts that compare instead of summarize",
     ],
-    landing: "/",
+    landing: "/product/AI-PP-006",
   },
   {
     sku: "AI-AG-017",
@@ -342,7 +342,7 @@ export const PRODUCTS: Product[] = [
       "Need triage that drafts, not just tags",
       "Shared inbox is eating the support team",
     ],
-    landing: "/",
+    landing: "/product/AI-AB-018",
   },
   {
     sku: "AI-AB-010",
@@ -363,7 +363,7 @@ export const PRODUCTS: Product[] = [
       "Need a lightweight CRM that nags me",
       "Relationships going cold in my inbox",
     ],
-    landing: "/",
+    landing: "/product/AI-AB-010",
   },
   {
     sku: "AI-AG-015",
@@ -405,7 +405,7 @@ export const PRODUCTS: Product[] = [
       "Need onboarding that is not a google doc graveyard",
       "Intake form plus kickoff in one kit",
     ],
-    landing: "/",
+    landing: "/product/AI-TP-007",
   },
   {
     sku: "AI-AG-012",
@@ -447,7 +447,7 @@ export const PRODUCTS: Product[] = [
       "Need a 13-week cash view",
       "Invoices and bills into one forecast",
     ],
-    landing: "/",
+    landing: "/product/AI-AB-060",
   },
   {
     sku: "AI-AG-057",
@@ -510,7 +510,7 @@ export const PRODUCTS: Product[] = [
       "Need a blameless draft from the timeline",
       "Action items from incidents get lost",
     ],
-    landing: "/",
+    landing: "/product/AI-AB-037",
   },
   {
     sku: "AI-AG-033",
@@ -552,7 +552,7 @@ export const PRODUCTS: Product[] = [
       "Want a watchdog that runs on my machine",
       "Need a site audit I actually own",
     ],
-    landing: "/",
+    landing: "/product/AI-AG-065",
   },
   {
     sku: "AI-CN-004",
@@ -573,7 +573,7 @@ export const PRODUCTS: Product[] = [
       "CRM follow-ups die because I will not give an agent send",
       "Need safe email automation",
     ],
-    landing: "/",
+    landing: "/product/AI-CN-004",
   },
   {
     sku: "AI-CN-008",
@@ -594,7 +594,7 @@ export const PRODUCTS: Product[] = [
       "Need local search over my files",
       "Private vault, no account",
     ],
-    landing: "/",
+    landing: "/product/AI-CN-008",
   },
   {
     sku: "AI-HOST-001",
@@ -615,7 +615,7 @@ export const PRODUCTS: Product[] = [
       "Need to run the shop on my own hardware",
       "Tired of subscription hostages",
     ],
-    landing: "/",
+    landing: "/product/AI-HOST-001",
   },
   {
     sku: "AI-AG-030",
@@ -657,7 +657,7 @@ export const PRODUCTS: Product[] = [
       "Need declines that stay warm",
       "Follow-ups that actually get a reply",
     ],
-    landing: "/",
+    landing: "/product/AI-PP-050",
   },
 ];
 
