@@ -10,15 +10,21 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CatalogRouteImport } from './routes/catalog'
 import { Route as EvolveRouteImport } from './routes/evolve'
-import { Route as MoreRouteImport } from './routes/more'
-import { Route as RadarRouteImport } from './routes/radar'
+import { Route as InstallRouteImport } from './routes/install'
+import { Route as ProductRouteImport } from './routes/product'
+import { Route as StudioRouteImport } from './routes/studio'
 import { Route as SwarmRouteImport } from './routes/swarm'
-import { Route as PIdRouteImport } from './routes/p.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CatalogRoute = CatalogRouteImport.update({
+  id: '/catalog',
+  path: '/catalog',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EvolveRoute = EvolveRouteImport.update({
@@ -26,14 +32,19 @@ const EvolveRoute = EvolveRouteImport.update({
   path: '/evolve',
   getParentRoute: () => rootRouteImport,
 } as any)
-const MoreRoute = MoreRouteImport.update({
-  id: '/more',
-  path: '/more',
+const InstallRoute = InstallRouteImport.update({
+  id: '/install',
+  path: '/install',
   getParentRoute: () => rootRouteImport,
 } as any)
-const RadarRoute = RadarRouteImport.update({
-  id: '/radar',
-  path: '/radar',
+const ProductRoute = ProductRouteImport.update({
+  id: '/product',
+  path: '/product',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StudioRoute = StudioRouteImport.update({
+  id: '/studio',
+  path: '/studio',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SwarmRoute = SwarmRouteImport.update({
@@ -41,52 +52,73 @@ const SwarmRoute = SwarmRouteImport.update({
   path: '/swarm',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PIdRoute = PIdRouteImport.update({
-  id: '/p/$id',
-  path: '/p/$id',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/catalog': typeof CatalogRoute
   '/evolve': typeof EvolveRoute
-  '/more': typeof MoreRoute
-  '/radar': typeof RadarRoute
+  '/install': typeof InstallRoute
+  '/product': typeof ProductRoute
+  '/studio': typeof StudioRoute
   '/swarm': typeof SwarmRoute
-  '/p/$id': typeof PIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/catalog': typeof CatalogRoute
   '/evolve': typeof EvolveRoute
-  '/more': typeof MoreRoute
-  '/radar': typeof RadarRoute
+  '/install': typeof InstallRoute
+  '/product': typeof ProductRoute
+  '/studio': typeof StudioRoute
   '/swarm': typeof SwarmRoute
-  '/p/$id': typeof PIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/catalog': typeof CatalogRoute
   '/evolve': typeof EvolveRoute
-  '/more': typeof MoreRoute
-  '/radar': typeof RadarRoute
+  '/install': typeof InstallRoute
+  '/product': typeof ProductRoute
+  '/studio': typeof StudioRoute
   '/swarm': typeof SwarmRoute
-  '/p/$id': typeof PIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/evolve' | '/more' | '/radar' | '/swarm' | '/p/$id'
+  fullPaths:
+    | '/'
+    | '/catalog'
+    | '/evolve'
+    | '/install'
+    | '/product'
+    | '/studio'
+    | '/swarm'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/evolve' | '/more' | '/radar' | '/swarm' | '/p/$id'
-  id: '__root__' | '/' | '/evolve' | '/more' | '/radar' | '/swarm' | '/p/$id'
+  to:
+    | '/'
+    | '/catalog'
+    | '/evolve'
+    | '/install'
+    | '/product'
+    | '/studio'
+    | '/swarm'
+  id:
+    | '__root__'
+    | '/'
+    | '/catalog'
+    | '/evolve'
+    | '/install'
+    | '/product'
+    | '/studio'
+    | '/swarm'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CatalogRoute: typeof CatalogRoute
   EvolveRoute: typeof EvolveRoute
-  MoreRoute: typeof MoreRoute
-  RadarRoute: typeof RadarRoute
+  InstallRoute: typeof InstallRoute
+  ProductRoute: typeof ProductRoute
+  StudioRoute: typeof StudioRoute
   SwarmRoute: typeof SwarmRoute
-  PIdRoute: typeof PIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -98,6 +130,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/catalog': {
+      id: '/catalog'
+      path: '/catalog'
+      fullPath: '/catalog'
+      preLoaderRoute: typeof CatalogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/evolve': {
       id: '/evolve'
       path: '/evolve'
@@ -105,18 +144,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EvolveRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/more': {
-      id: '/more'
-      path: '/more'
-      fullPath: '/more'
-      preLoaderRoute: typeof MoreRouteImport
+    '/install': {
+      id: '/install'
+      path: '/install'
+      fullPath: '/install'
+      preLoaderRoute: typeof InstallRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/radar': {
-      id: '/radar'
-      path: '/radar'
-      fullPath: '/radar'
-      preLoaderRoute: typeof RadarRouteImport
+    '/product': {
+      id: '/product'
+      path: '/product'
+      fullPath: '/product'
+      preLoaderRoute: typeof ProductRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/studio': {
+      id: '/studio'
+      path: '/studio'
+      fullPath: '/studio'
+      preLoaderRoute: typeof StudioRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/swarm': {
@@ -126,23 +172,17 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SwarmRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/p/$id': {
-      id: '/p/$id'
-      path: '/p/$id'
-      fullPath: '/p/$id'
-      preLoaderRoute: typeof PIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CatalogRoute: CatalogRoute,
   EvolveRoute: EvolveRoute,
-  MoreRoute: MoreRoute,
-  RadarRoute: RadarRoute,
+  InstallRoute: InstallRoute,
+  ProductRoute: ProductRoute,
+  StudioRoute: StudioRoute,
   SwarmRoute: SwarmRoute,
-  PIdRoute: PIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
