@@ -1,7 +1,9 @@
 import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip as RTooltip, XAxis, YAxis } from "recharts";
+import { toast } from "sonner";
 import { ArrowRight, Eye, Radio, Target } from "lucide-react";
+import { scanLiveIntents } from "@/lib/ai";
 import { productBySku } from "@/lib/catalog";
 import { CHANNELS } from "@/lib/genome";
 import { droughtSeries, hoursLabel, totals } from "@/lib/stats";
@@ -21,12 +23,33 @@ function RadarHome() {
   const swarms = useSwarmStore((s) => s.swarms);
   const autopilot = useSwarmStore((s) => s.autopilot);
   const activities = useSwarmStore((s) => s.activities);
+  const ingestLive = useSwarmStore((s) => s.ingestLive);
+  const lastLiveScanAt = useSwarmStore((s) => s.lastLiveScanAt);
   const [selectedId, setSelectedId] = useState<string | null>(pulses[0]?.id ?? null);
+  const [scanning, setScanning] = useState(false);
+  const liveCount = pulses.filter((p) => p.live).length;
   const selected = pulses.find((p) => p.id === selectedId) ?? pulses[0];
   const stats = totals(organisms);
-  const hours = swarms.reduce((a, sw) => a + sw.simulatedHours, 0);
   const series = useMemo(() => droughtSeries(), []);
   const product = selected ? productBySku(selected.sku) : undefined;
+
+  async function scanLive() {
+    setScanning(true);
+    try {
+      const res = await scanLiveIntents();
+      if (!res.ok) {
+        toast.message(res.error, { description: "Radar is still the lab until a scan lands." });
+        return;
+      }
+      const first = ingestLive(res.hits);
+      if (first) setSelectedId(first);
+      toast.success(`${res.hits.length} live posts`, {
+        description: "Reply on X is a real reply into that thread.",
+      });
+    } finally {
+      setScanning(false);
+    }
+  }
 
   return (
     <div className="flex flex-col gap-8">
@@ -37,18 +60,17 @@ function RadarHome() {
             Stop buying traffic. Hijack the intent that already exists.
           </h1>
           <p className="mt-4 max-w-xl text-base leading-relaxed text-muted">
-            multinicheai.com has instruments. It does not have interception. SWARM maps live
-            pain-utterances to a SKU, then evolves a swarm of proof-first micro-ads — search
-            intercepts, conversation natives, spec-sheet proof-loops, and shadow listings.
+            Lab numbers are simulated. Real movement is a reply into a live post. Scan X, map the
+            sentence to a SKU, tap Reply. That is an actual intercept — not a mock impression.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
-            <Button asChild>
+            <Button onClick={() => void scanLive()} disabled={scanning}>
+              {scanning ? "Scanning X…" : liveCount ? `Rescan live X · ${liveCount}` : "Scan live X"}
+            </Button>
+            <Button asChild variant="outline">
               <Link to="/swarm">
                 Open the swarm <ArrowRight className="size-4" />
               </Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link to="/catalog">Map the catalog</Link>
             </Button>
             <Button asChild variant="outline">
               <Link to="/install">Get the app</Link>
@@ -59,10 +81,10 @@ function RadarHome() {
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <Stat label="Hijacked visits" value={formatCompact(stats.clicks)} hint={hoursLabel(hours)} />
-          <Stat label="Proof conversions" value={String(stats.conversions)} hint="modeled" />
-          <Stat label="Alive organisms" value={String(stats.live)} hint={`${swarms.length} swarms`} />
-          <Stat label="Spend" value={formatMoney(stats.spend)} hint={`${(stats.ctr * 100).toFixed(1)}% CTR`} />
+          <Stat label="Hijacked visits" value={formatCompact(stats.clicks)} hint="lab, not live" />
+          <Stat label="Proof conversions" value={String(stats.conversions)} hint="lab" />
+          <Stat label="Live X posts" value={String(liveCount)} hint={lastLiveScanAt ? "from last scan" : "scan to fill"} />
+          <Stat label="Spend" value={formatMoney(stats.spend)} hint="lab budget" />
         </div>
       </section>
 
@@ -72,7 +94,9 @@ function RadarHome() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-mono text-[10px] uppercase tracking-widest text-subtle">Intent radar</p>
-                <h2 className="text-lg font-medium">Live pain, mapped to SKUs</h2>
+                <h2 className="text-lg font-medium">
+                  {liveCount ? "Live posts on X" : "Lab pain, until you scan"}
+                </h2>
               </div>
               <Radio className="size-4 text-accent" />
             </div>

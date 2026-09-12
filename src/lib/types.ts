@@ -68,6 +68,9 @@ export type IntentPulse = {
   angle: number;
   radius: number;
   ts: number;
+  postUrl?: string;
+  handle?: string;
+  live?: boolean;
 };
 
 export type GeneratedCopy = {
@@ -78,7 +81,7 @@ export type GeneratedCopy = {
   cta: string;
 };
 
-export type ActivityKind = "hijack" | "evolve" | "pilot" | "live";
+export type ActivityKind = "hijack" | "evolve" | "pilot" | "live" | "scan";
 
 export type Activity = {
   id: string;
@@ -91,4 +94,12 @@ export type Destinations = {
   xHandle: string;
   redditUser: string;
   redditSub: string;
+};
+
+export type LiveHit = {
+  text: string;
+  handle: string;
+  url: string;
+  sku: string;
+  heat: number;
 };

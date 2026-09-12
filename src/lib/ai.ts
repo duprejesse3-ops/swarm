@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
-import type { Channel, GeneratedCopy } from "./types";
+import { PRODUCTS } from "./catalog";
+import type { Channel, GeneratedCopy, LiveHit } from "./types";
 
 type SpawnInput = {
   productName: string;
@@ -125,3 +126,85 @@ Return 6 new ads as JSON (mix of channels).`;
     if (copies.length === 0) return { ok: false as const, error: "Could not parse evolved copy" };
     return { ok: true as const, copies };
   });
+
+function flattenResponseText(body: unknown): string {
+  const rec = body as Record<string, unknown>;
+  if (typeof rec.output_text === "string") return rec.output_text;
+  const chunks: string[] = [];
+  const output = rec.output;
+  if (Array.isArray(output)) {
+    for (const item of output) {
+      const row = item as Record<string, unknown>;
+      const content = row.content ?? (row.message as Record<string, unknown> | undefined)?.content;
+      if (typeof content === "string") chunks.push(content);
+      if (Array.isArray(content)) {
+        for (const c of content) {
+          if (typeof c === "string") chunks.push(c);
+          else if (c && typeof c === "object" && "text" in c) {
+            chunks.push(String((c as { text: string }).text));
+          }
+        }
+      }
+    }
+  }
+  return chunks.join("\n");
+}
+
+function parseHits(text: string): LiveHit[] {
+  const match = text.match(/\[[\s\S]*\]/);
+  if (!match) return [];
+  try {
+    const parsed = JSON.parse(match[0]) as LiveHit[];
+    if (!Array.isArray(parsed)) return [];
+    const skus = new Set(PRODUCTS.map((p) => p.sku));
+    return parsed
+      .filter((x) => x && typeof x.text === "string")
+      .map((x) => ({
+        text: String(x.text).slice(0, 280),
+        handle: String(x.handle ?? "").replace(/^@/, "").slice(0, 32),
+        url: String(x.url ?? "").slice(0, 220),
+        sku: skus.has(String(x.sku)) ? String(x.sku) : (PRODUCTS[1]?.sku ?? PRODUCTS[0]!.sku),
+        heat: Math.max(18, Math.min(99, Number(x.heat) || 50)),
+      }))
+      .filter((x) => x.text.length > 12);
+  } catch {
+    return [];
+  }
+}
+
+export const scanLiveIntents = createServerFn({ method: "POST" }).handler(async () => {
+  const apiKey = process.env.XAI_API_KEY;
+  if (!apiKey) return { ok: false as const, error: "AI is not available in this environment" };
+  const catalog = PRODUCTS.slice(0, 12)
+    .map((p) => `${p.sku} | ${p.name} | ${p.utterances[0]}`)
+    .join("\n");
+  const res = await fetch("https://api.x.ai/v1/responses", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: "grok-4.5",
+      tools: [{ type: "x_search" }],
+      max_output_tokens: 1400,
+      input: [
+        {
+          role: "user",
+          content: `Search X for posts from the last 7 days where people complain about drowning in Gmail, meeting notes without action items, ChatGPT wrappers, SEO content mills, buying Google ads for AI tools, or inbox zero.
+Map each REAL post to ONE SKU from:
+${catalog}
+Return ONLY a JSON array of 6 to 10 items:
+{"text":"verbatim excerpt","handle":"username","url":"https://x.com/user/status/ID","sku":"AI-XX-000","heat":0-100}
+Skip anything without a real x.com status URL. No slogans. No invented posts.`,
+        },
+      ],
+    }),
+  });
+  if (!res.ok) return { ok: false as const, error: `xAI API error ${res.status}` };
+  const body = (await res.json()) as unknown;
+  const hits = parseHits(flattenResponseText(body));
+  if (hits.length === 0) return { ok: false as const, error: "No live posts parsed. Try again." };
+  return { ok: true as const, hits };
+});
+

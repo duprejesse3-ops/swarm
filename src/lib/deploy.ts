@@ -1,4 +1,4 @@
-import { productBySku } from "./catalog";
+import { productBySku, SITE } from "./catalog";
 import type { Channel, Destinations, Organism } from "./types";
 import { copyToClipboard } from "./utils";
 
@@ -175,4 +175,26 @@ export async function shareOrganism(organism: Organism) {
   }
   const ok = await copyToClipboard(text);
   return ok ? ("copied" as const) : ("failed" as const);
+}
+
+export function statusIdFromUrl(url: string) {
+  const match = url.match(/status\/(\d+)/);
+  return match?.[1];
+}
+
+export function interceptReply(sku: string) {
+  const product = productBySku(sku);
+  if (!product) return "";
+  const landing = product.landing.startsWith("http")
+    ? product.landing
+    : `${SITE}${product.landing.startsWith("/") ? product.landing : `/${product.landing}`}`;
+  return `${product.proof}. ${product.name} — $${product.price} one-time.\n${landing}?utm_source=swarm&utm_medium=x-reply&sku=${product.sku}`;
+}
+
+export function replyIntentUrl(opts: { postUrl?: string; sku: string }) {
+  const text = interceptReply(opts.sku);
+  const params = new URLSearchParams({ text });
+  const id = opts.postUrl ? statusIdFromUrl(opts.postUrl) : undefined;
+  if (id) params.set("in_reply_to", id);
+  return `https://twitter.com/intent/tweet?${params.toString()}`;
 }

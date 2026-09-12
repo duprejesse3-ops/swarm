@@ -1,6 +1,8 @@
 import { productBySku } from "@/lib/catalog";
+import { replyIntentUrl } from "@/lib/deploy";
 import type { IntentPulse } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 const SOURCE_LABEL = {
   search: "Search",
@@ -123,13 +125,31 @@ export function PulseList({
             >
               <div className="flex items-center justify-between gap-2">
                 <span className="font-mono text-[10px] uppercase tracking-widest text-subtle">
-                  {SOURCE_LABEL[p.source]} · {p.sku}
+                  {p.live ? "Live X" : SOURCE_LABEL[p.source]} · {p.sku}
+                  {p.handle ? ` · @${p.handle}` : ""}
                 </span>
                 <span className="font-mono text-[10px] tabular-nums text-accent">{p.heat}</span>
               </div>
               <p className="mt-1 text-sm leading-snug">{p.text}</p>
               <p className="mt-1 text-xs text-muted">{product?.name}</p>
             </button>
+            {p.live && p.postUrl ? (
+              <div className="mt-2">
+                <Button
+                  size="sm"
+                  className="min-h-11 w-full"
+                  onClick={() => {
+                    window.open(
+                      replyIntentUrl({ postUrl: p.postUrl, sku: p.sku }),
+                      "_blank",
+                      "noopener,noreferrer",
+                    );
+                  }}
+                >
+                  Reply on X
+                </Button>
+              </div>
+            ) : null}
           </li>
         );
       })}

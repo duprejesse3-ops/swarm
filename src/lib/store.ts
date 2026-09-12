@@ -13,7 +13,7 @@ import {
   spawnLocalSwarm,
   tickOrganisms,
 } from "./genome";
-import type { Activity, Destinations, GeneratedCopy, IntentPulse, Organism, Swarm } from "./types";
+import type { Activity, Destinations, GeneratedCopy, IntentPulse, LiveHit, Organism, Swarm } from "./types";
 import { uid } from "./utils";
 import { DEFAULT_DESTINATIONS } from "./deploy";
 
@@ -28,6 +28,7 @@ type SwarmState = {
   activities: Activity[];
   lastAutoHijackAt: number;
   lastAutoEvolveAt: number;
+  lastLiveScanAt: number;
   destinations: Destinations;
   setHydrated: () => void;
   select: (id: string | null) => void;
@@ -48,6 +49,7 @@ type SwarmState = {
   pullFromLive: (id: string) => void;
   setBudget: (swarmId: string, dailyBudget: number) => void;
   setDestinations: (patch: Partial<Destinations>) => void;
+  ingestLive: (hits: LiveHit[]) => string | null;
   resetLab: () => void;
 };
 
@@ -80,6 +82,7 @@ function initial(): Pick<
   | "activities"
   | "lastAutoHijackAt"
   | "lastAutoEvolveAt"
+  | "lastLiveScanAt"
   | "destinations"
 > {
   return {
@@ -99,6 +102,7 @@ function initial(): Pick<
     ],
     lastAutoHijackAt: 0,
     lastAutoEvolveAt: 0,
+    lastLiveScanAt: 0,
     destinations: { ...DEFAULT_DESTINATIONS },
   };
 }
@@ -309,6 +313,31 @@ export const useSwarmStore = create<SwarmState>()(
             ...patch,
           },
         })),
+      ingestLive: (hits) => {
+        const now = Date.now();
+        const pulses = hits.map((h, i) => ({
+          id: `live_${now}_${i}`,
+          text: h.text,
+          source: "x" as const,
+          sku: h.sku,
+          heat: h.heat,
+          angle: (i * 37) % 360,
+          radius: 22 + ((i * 9) % 60),
+          ts: now,
+          postUrl: h.url || undefined,
+          handle: h.handle || undefined,
+          live: true,
+        }));
+        set((s) => ({
+          pulses: [...pulses, ...s.pulses.filter((p) => !p.live)].slice(0, 28),
+          lastLiveScanAt: now,
+          activities: [
+            log("scan", `Live X scan · ${pulses.length} real posts.`),
+            ...s.activities,
+          ].slice(0, 24),
+        }));
+        return pulses[0]?.id ?? null;
+      },
       resetLab: () => set({ ...initial(), destinations: get().destinations, hydrated: true }),
     }),
     {
@@ -324,6 +353,7 @@ export const useSwarmStore = create<SwarmState>()(
         activities: s.activities,
         lastAutoHijackAt: s.lastAutoHijackAt,
         lastAutoEvolveAt: s.lastAutoEvolveAt,
+        lastLiveScanAt: s.lastLiveScanAt,
         destinations: s.destinations ?? DEFAULT_DESTINATIONS,
       }),
       merge: (persisted, current) => {
