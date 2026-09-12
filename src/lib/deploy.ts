@@ -104,11 +104,25 @@ export function redditUserUrl(dest?: Destinations) {
 
 export function deployTargets(organism: Organism, dest?: Destinations): DeployTarget[] {
   const d = destOf(dest);
+  const x: DeployTarget = {
+    id: "x",
+    label: d.xHandle ? `Post on X` : "Post on X",
+    href: xIntentUrl(organism),
+    hint: `Opens X compose as @${d.xHandle || "you"}. Tap Post in X to publish.`,
+  };
+  const reddit: DeployTarget = {
+    id: "reddit",
+    label: `Post Reddit`,
+    href: redditSubmitUrl(organism, d),
+    hint: `Opens r/${d.redditSub} as u/${d.redditUser || "you"}. Tap Post on Reddit to publish.`,
+  };
   if (organism.channel === "search") {
     return [
+      x,
+      reddit,
       {
         id: "google-ads",
-        label: "Open Google Ads",
+        label: "Google Ads",
         href: "https://ads.google.com/aw/campaigns",
         hint: "Packet is RSA-ready. Paste into a Search campaign. Google bills that account — SWARM does not.",
       },
@@ -116,28 +130,16 @@ export function deployTargets(organism: Organism, dest?: Destinations): DeployTa
   }
   if (organism.channel === "proof") {
     return [
+      x,
+      reddit,
       {
         id: "site",
-        label: "Open the live spec",
+        label: "Open spec",
         href: organism.landingUrl,
-        hint: "Proof-loop is the spec on multinicheai.com. The UTM link is live.",
+        hint: "Proof-loop spec on multinicheai.com. The UTM link is live.",
       },
     ];
   }
-  const x: DeployTarget = {
-    id: "x",
-    label: d.xHandle ? `Post on X as @${d.xHandle}` : "Post on X",
-    href: xIntentUrl(organism),
-    hint: "Opens X compose with the intercept filled. Posts from the account you are logged into.",
-  };
-  const reddit: DeployTarget = {
-    id: "reddit",
-    label: `Post to r/${d.redditSub}`,
-    href: redditSubmitUrl(organism, d),
-    hint: d.redditUser
-      ? `Opens Reddit submit in r/${d.redditSub} as u/${d.redditUser}. Native listing, not a banner.`
-      : `Opens Reddit submit in r/${d.redditSub}. Add your Reddit username in Destinations if you want it signed.`,
-  };
   if (organism.channel === "conversation") return [x, reddit];
   return [reddit, x];
 }

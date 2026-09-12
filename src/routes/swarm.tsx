@@ -72,8 +72,9 @@ function SwarmBoard() {
             Generation {swarm.generation} · {hoursLabel(swarm.simulatedHours)}
           </p>
           <p className="mt-2 max-w-xl text-sm text-muted">
-            Impressions and spend in this board are the lab. Go live ships the ad to Google, X, or
-            the site. SWARM does not bill you.
+            Tap <span className="text-fg">Post on X</span> or{" "}
+            <span className="text-fg">Post Reddit</span> on a card. Compose opens with the ad
+            filled. You hit Post in that app. SWARM does not bill you.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
