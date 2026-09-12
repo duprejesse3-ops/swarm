@@ -2,7 +2,7 @@ import type { MouseEvent } from "react";
 import { toast } from "sonner";
 import { CHANNELS } from "@/lib/genome";
 import { productBySku, productImageSrc } from "@/lib/catalog";
-import { copyOrganismPacket, deployTargets, destOf, type DeployTarget } from "@/lib/deploy";
+import { copyForTarget, deployTargets, destOf, redditPolicy, type DeployTarget } from "@/lib/deploy";
 import { useSwarmStore } from "@/lib/store";
 import type { Organism } from "@/lib/types";
 import { cn, formatCompact, formatMoney } from "@/lib/utils";
@@ -33,8 +33,15 @@ export function OrganismCard({
   async function post(target: DeployTarget, event: MouseEvent) {
     event.stopPropagation();
     onSelect?.();
-    const copied = await copyOrganismPacket(organism);
-    if (copied) toast.success("Copied — now tap Post in the app that opens");
+    const copied = await copyForTarget(organism, target, dest);
+    const policy = target.id === "reddit" ? redditPolicy(dest.redditSub) : null;
+    if (policy) {
+      toast.message(`r/${dest.redditSub} bans a feed ad`, {
+        description: "Comment copied. Paste it in this week's Promote-your-business sticky. Do not attach the ad image.",
+      });
+    } else if (copied) {
+      toast.success("Copied — now tap Post in the app that opens");
+    }
     window.open(target.href, "_blank", "noopener,noreferrer");
     goLive(organism.id);
   }

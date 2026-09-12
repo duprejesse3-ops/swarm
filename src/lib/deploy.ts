@@ -25,6 +25,26 @@ export const REDDIT_SUBS = [
   "sales",
 ];
 
+/** Main-feed product posts get removed here. Promo sticky only. */
+export const REDDIT_PROMO_THREAD: Record<string, { reason: string; search: string }> = {
+  smallbusiness: {
+    reason:
+      "r/smallbusiness only allows product posts in the weekly Promote-your-business sticky. A feed post with an AI product, a landing URL, or an ad image gets removed and can ban the account.",
+    search:
+      "https://www.reddit.com/r/smallbusiness/search/?q=Promote%20your%20business&restrict_sr=1&sort=new&t=month",
+  },
+  entrepreneur: {
+    reason: "r/Entrepreneur treats a product post in the feed as spam. Use their weekly promo thread.",
+    search:
+      "https://www.reddit.com/r/Entrepreneur/search/?q=Promote%20your%20business&restrict_sr=1&sort=new&t=month",
+  },
+  startups: {
+    reason: "r/startups removes product pitches from the feed. Showcase goes in their weekly thread.",
+    search:
+      "https://www.reddit.com/r/startups/search/?q=Promote%20your%20startup&restrict_sr=1&sort=new&t=month",
+  },
+};
+
 export function destOf(dest?: Destinations | null): Destinations {
   return {
     xHandle: stripAt(dest?.xHandle || DEFAULT_DESTINATIONS.xHandle),
@@ -39,6 +59,27 @@ function stripAt(value: string) {
 
 function stripSub(value: string) {
   return value.trim().replace(/^\/?(r\/)?/i, "").replace(/\s+/g, "");
+}
+
+export function redditPolicy(sub?: string) {
+  return REDDIT_PROMO_THREAD[stripSub(sub || "").toLowerCase()] ?? null;
+}
+
+export function redditComment(organism: Organism, dest?: Destinations) {
+  const d = destOf(dest);
+  const product = productBySku(organism.sku);
+  const name = product?.name ?? organism.sku;
+  const price = product ? `$${product.price} one-time` : "";
+  const maker = d.redditUser
+    ? `I'm the maker (u/${d.redditUser}). Questions welcome — no DMs.`
+    : "Questions welcome — no DMs.";
+  return [
+    price ? `${name} — ${price}` : name,
+    organism.body,
+    `Proof: ${organism.proofHook}`,
+    organism.landingUrl,
+    maker,
+  ].join("\n\n");
 }
 
 export function organismPacket(organism: Organism) {
@@ -80,11 +121,12 @@ export function tweetText(organism: Organism) {
 
 export function redditSubmitUrl(organism: Organism, dest?: Destinations) {
   const d = destOf(dest);
-  const product = productBySku(organism.sku);
-  const title = clip(organism.headline || product?.job || organism.sku, 300);
-  const by = d.redditUser ? `\n\n— u/${d.redditUser}` : "";
-  const body = `${organism.body}\n\n${organism.proofHook}\n\n${organism.landingUrl}${by}`;
   const sub = d.redditSub || "smallbusiness";
+  const policy = redditPolicy(sub);
+  if (policy) return policy.search;
+  const product = productBySku(organism.sku);
+  const title = clip(`${product?.name ?? organism.sku} — ${organism.proofHook}`, 300);
+  const body = redditComment(organism, d);
   return `https://www.reddit.com/r/${encodeURIComponent(sub)}/submit?title=${encodeURIComponent(title)}&text=${encodeURIComponent(body)}`;
 }
 
@@ -110,11 +152,14 @@ export function deployTargets(organism: Organism, dest?: Destinations): DeployTa
     href: xIntentUrl(organism),
     hint: `Opens X compose as @${d.xHandle || "you"}. Tap Post in X to publish.`,
   };
+  const policy = redditPolicy(d.redditSub);
   const reddit: DeployTarget = {
     id: "reddit",
-    label: `Post Reddit`,
+    label: policy ? "Reddit promo thread" : "Post Reddit",
     href: redditSubmitUrl(organism, d),
-    hint: `Opens r/${d.redditSub} as u/${d.redditUser || "you"}. Tap Post on Reddit to publish.`,
+    hint: policy
+      ? `r/${d.redditSub} bans feed ads. Copies a comment and opens this week's Promote-your-business sticky.`
+      : `Opens r/${d.redditSub} as u/${d.redditUser || "you"} as a named product, not a fake question.`,
   };
   if (organism.channel === "search") {
     return [
@@ -157,6 +202,13 @@ export function channelVerb(channel: Channel) {
 
 export async function copyOrganismPacket(organism: Organism) {
   return copyToClipboard(organismPacket(organism));
+}
+
+export async function copyForTarget(organism: Organism, target: DeployTarget, dest?: Destinations) {
+  if (target.id === "reddit") {
+    return copyToClipboard(redditComment(organism, dest));
+  }
+  return copyOrganismPacket(organism);
 }
 
 export async function shareOrganism(organism: Organism) {
