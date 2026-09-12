@@ -48,10 +48,9 @@ function InstallPage() {
         <Badge variant="accent">Android · Windows</Badge>
         <h1 className="mt-4 text-4xl font-medium tracking-tight">Install SWARM as an app</h1>
         <p className="mt-3 text-base leading-relaxed text-muted">
-          One tap from Chrome or Edge. Autopilot keeps hijacking intent, evolving winners, and
-          writing proof-first ads while the app sits on your home screen or Start menu. No Play
-          Store listing, no Microsoft Store listing — the install is the site, as a real app
-          window. The same build is SKU AI-AB-070 on multinicheai.com: $79.00, one-time, bundle-eligible.
+          grok-sandbox.com is a preview tunnel. It sleeps (Cloudflare 521). SWARM itself is not
+          down. For an app that stays up, host the GitHub repo on your own Vercel project, then
+          install the PWA from that URL — not from a grok-sandbox bookmark.
         </p>
         <div className="mt-6 flex flex-wrap gap-3">
           <Button onClick={() => void install()} disabled={installed}>
@@ -68,6 +67,34 @@ function InstallPage() {
           </Button>
         </div>
       </div>
+
+      <Card>
+        <CardContent className="pt-5">
+          <h2 className="text-lg font-medium">Your own host — stays up</h2>
+          <p className="mt-2 text-sm text-muted">
+            Source is already yours: github.com/duprejesse3-ops/swarm. Grok does not have to be
+            running.
+          </p>
+          <ol className="mt-4 space-y-3 text-sm text-muted">
+            <Step n="1" text="Open vercel.com, sign in with GitHub (duprejesse3-ops)." />
+            <Step n="2" text="New Project → Import swarm. Deploy. You get a *.vercel.app URL that does not sleep." />
+            <Step n="3" text="Optional: add swarm.multinicheai.com as the domain." />
+            <Step n="4" text="Open that URL in Chrome. Tap Install SWARM. That home-screen app is standalone." />
+          </ol>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <Button asChild>
+              <a href="https://vercel.com/new/clone?repository-url=https://github.com/duprejesse3-ops/swarm" target="_blank" rel="noreferrer">
+                Import on Vercel
+              </a>
+            </Button>
+            <Button asChild variant="outline">
+              <a href="https://github.com/duprejesse3-ops/swarm" target="_blank" rel="noreferrer">
+                Open the repo
+              </a>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card>

@@ -8,6 +8,16 @@ Most ads try to create demand. SWARM hijacks demand that already exists: it maps
 
 Live source: [github.com/duprejesse3-ops/swarm](https://github.com/duprejesse3-ops/swarm)
 
+## Host it yourself (does not depend on Grok)
+
+The Grok preview at grok-sandbox.com sleeps. Cloudflare 521 means that tunnel died — not SWARM.
+
+1. Open [vercel.com/new](https://vercel.com/new) and import `duprejesse3-ops/swarm`.
+2. Deploy. Use the `*.vercel.app` URL (or `swarm.multinicheai.com`).
+3. Install the PWA from **that** URL in Chrome. That home-screen app stays up.
+
+Build command is `npm run build`. Optional env: `XAI_API_KEY` (Scan live X / Grok copy). Without it, autopilot still runs on the local genome.
+
 ## Install (Android + Windows)
 
 This is a progressive web app. There is **no Play Store APK** and **no Microsoft Store listing**. Chrome and Edge install SWARM as a real app window (home screen / Start menu / taskbar).
