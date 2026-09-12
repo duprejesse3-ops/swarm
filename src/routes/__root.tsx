@@ -1,39 +1,28 @@
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
 import { AuthProvider } from "@/lib/auth/provider";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
-import { Shell } from "@/components/shell";
-import { BRAND, COPYRIGHT } from "@/lib/catalog";
 import appCss from "../styles.css?url";
 
-const APP_NAME = "SWARM";
+const APP_NAME = "Placement";
 
 export const Route = createRootRoute({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { title: `${APP_NAME} · ${BRAND}` },
+      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { title: APP_NAME },
+      { name: "theme-color", content: "#0c0d0c" },
       {
         name: "description",
         content:
-          "Intent-hijack ad organism for MULTINICHE AI. Intercept demand that already exists. Evolve proof-first micro-ads.",
+          "See the ad as the channel will. Placement Studio previews search intercept, conversation native, proof-loop, and shadow listing — lab numbers stay simulated until you go live.",
       },
-      { name: "author", content: BRAND },
-      { name: "copyright", content: COPYRIGHT },
-      { name: "theme-color", content: "#0b0c0a" },
-      { name: "mobile-web-app-capable", content: "yes" },
-      { name: "application-name", content: APP_NAME },
     ],
     links: [
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
       { rel: "stylesheet", href: appCss },
-      { rel: "manifest", href: "/manifest.webmanifest" },
+      { rel: "manifest", href: "/__grok/manifest.webmanifest" },
       { rel: "apple-touch-icon", href: "/__grok/icon-180.png" },
-      { rel: "apple-touch-icon", href: "/icon-192.png" },
-      {
-        rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Sans:wght@400;500;600;700&display=swap",
-      },
     ],
   }),
   component: () => (
@@ -44,9 +33,7 @@ export const Route = createRootRoute({
       <body>
         <PreviewHostBridge />
         <AuthProvider>
-          <Shell>
-            <Outlet />
-          </Shell>
+          <Outlet />
         </AuthProvider>
         <Scripts />
       </body>

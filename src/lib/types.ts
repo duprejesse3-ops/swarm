@@ -1,105 +1,65 @@
-export type Channel = "search" | "conversation" | "proof" | "shadow";
+export type Format = "search" | "conversation" | "proof" | "shadow";
+export type Status = "lab" | "live";
+export type Destination = "google" | "x" | "site";
 
-export type Format =
-  | "Prompt Pack"
-  | "Automation"
-  | "Agent"
-  | "Template"
-  | "Connector"
-  | "Host";
-
-export type OrganismStatus = "alive" | "killed" | "champion" | "live";
-
-export type IntentSource = "search" | "x" | "reddit" | "forum";
-
-export type Product = {
-  sku: string;
-  name: string;
-  price: number;
-  format: Format;
-  role: string;
-  job: string;
-  proof: string;
-  pain: string;
-  queries: string[];
-  utterances: string[];
-  landing: string;
-};
-
-export type Organism = {
-  id: string;
-  swarmId: string;
-  sku: string;
-  channel: Channel;
-  generation: number;
-  parentIds: string[];
-  headline: string;
-  body: string;
-  proofHook: string;
-  cta: string;
-  landingUrl: string;
-  targetIntent: string;
-  status: OrganismStatus;
-  fitness: number;
+export type Metrics = {
   impressions: number;
-  clicks: number;
-  conversions: number;
-  spend: number;
-  createdAt: number;
-  liveAt?: number;
+  ctr: number;
+  dwell: number;
+  proof: number;
 };
 
-export type Swarm = {
+export type Placement = {
   id: string;
-  name: string;
-  generation: number;
-  dailyBudget: number;
-  running: boolean;
-  startedAt: number | null;
-  simulatedHours: number;
-};
-
-export type IntentPulse = {
-  id: string;
-  text: string;
-  source: IntentSource;
-  sku: string;
-  heat: number;
-  angle: number;
-  radius: number;
-  ts: number;
-  postUrl?: string;
-  handle?: string;
-  live?: boolean;
-};
-
-export type GeneratedCopy = {
-  channel: Channel;
+  campaignId: string;
+  format: Format;
+  product: string;
   headline: string;
   body: string;
-  proofHook: string;
   cta: string;
+  query?: string;
+  keywords?: string[];
+  prompt?: string;
+  reply?: string;
+  listing?: {
+    category: string;
+    rating: number;
+    reviews: number;
+    place: string;
+    note: string;
+  };
+  lab: Metrics;
+  live: Metrics | null;
+  status: Status;
+  destination: Destination | null;
+  shippedAt: number | null;
 };
 
-export type ActivityKind = "hijack" | "evolve" | "pilot" | "live" | "scan";
-
-export type Activity = {
+export type Campaign = {
   id: string;
-  ts: number;
-  kind: ActivityKind;
-  text: string;
+  name: string;
+  brief: string;
+  budget: number;
 };
 
-export type Destinations = {
-  xHandle: string;
-  redditUser: string;
-  redditSub: string;
+export type Variant = {
+  id: string;
+  placementId: string;
+  headline: string;
+  body: string;
+  cta: string;
+  labCtr: number;
 };
 
-export type LiveHit = {
+export type SignalKind = "query" | "opening" | "listing" | "packet";
+
+export type Signal = {
+  id: string;
+  kind: SignalKind;
   text: string;
-  handle: string;
-  url: string;
-  sku: string;
-  heat: number;
+  matchId: string;
+  score: number;
+  at: number;
 };
+
+export type FilterId = "all" | Format;
