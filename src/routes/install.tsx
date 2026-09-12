@@ -58,7 +58,7 @@ function InstallPage() {
             {installed ? "Already installed" : canPrompt ? "Install SWARM" : "Install when prompted"}
           </Button>
           <Button asChild variant="outline">
-            <a href="https://github.com/duprejesse3-ops/swarm" target="_blank" rel="noreferrer">
+            <a href="https://github.com/duprejesse3-ops/Jblessd" target="_blank" rel="noreferrer">
               Source on GitHub
             </a>
           </Button>
@@ -72,8 +72,8 @@ function InstallPage() {
         <CardContent className="pt-5">
           <h2 className="text-lg font-medium">Your own host — stays up</h2>
           <p className="mt-2 text-sm text-muted">
-            Source is already yours: github.com/duprejesse3-ops/swarm. Grok does not have to be
-            running.
+            Source is already yours: github.com/duprejesse3-ops/Jblessd. Live operator:
+            multinicheai.com/swarm. Grok does not have to be running.
           </p>
           <ol className="mt-4 space-y-3 text-sm text-muted">
             <Step n="1" text="Open vercel.com, sign in with GitHub (duprejesse3-ops)." />
@@ -83,12 +83,12 @@ function InstallPage() {
           </ol>
           <div className="mt-5 flex flex-wrap gap-3">
             <Button asChild>
-              <a href="https://vercel.com/new/clone?repository-url=https://github.com/duprejesse3-ops/swarm" target="_blank" rel="noreferrer">
-                Import on Vercel
+              <a href="https://multinicheai.com/swarm" target="_blank" rel="noreferrer">
+                Open multinicheai.com/swarm
               </a>
             </Button>
             <Button asChild variant="outline">
-              <a href="https://github.com/duprejesse3-ops/swarm" target="_blank" rel="noreferrer">
+              <a href="https://github.com/duprejesse3-ops/Jblessd" target="_blank" rel="noreferrer">
                 Open the repo
               </a>
             </Button>
