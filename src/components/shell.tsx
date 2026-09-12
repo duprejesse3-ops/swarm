@@ -7,7 +7,8 @@ import { useSwarmStore } from "@/lib/store";
 import { BRAND, COPYRIGHT, SITE } from "@/lib/catalog";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Switch } from "@/components/ui/switch";
-import { armInstallCapture, isStandalone } from "@/lib/install";
+import { toast } from "sonner";
+import { armInstallCapture, installApp, isStandalone } from "@/lib/install";
 
 const NAV = [
   { to: "/", label: "Radar", icon: Radar, key: "1" },
@@ -30,6 +31,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const autopilot = useSwarmStore((s) => s.autopilot);
   const setAutopilot = useSwarmStore((s) => s.setAutopilot);
   const [standalone, setStandalone] = useState(false);
+  const [installing, setInstalling] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
 
   useEffect(() => {
@@ -90,6 +92,34 @@ export function Shell({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [navigate, setAutopilot]);
 
+  async function onGetApp() {
+    if (standalone) return;
+    setInstalling(true);
+    try {
+      const result = await installApp();
+      if (result === "accepted") {
+        toast.success("SWARM is on this phone");
+        setStandalone(true);
+        return;
+      }
+      if (result === "opened-chrome") {
+        toast.message("Opening Chrome to install", {
+          description: "Tap Download once Chrome opens. That is the in-app install.",
+        });
+        return;
+      }
+      if (result === "ios") {
+        toast.message("On iPhone: Share → Add to Home Screen");
+        void navigate({ to: "/install" });
+        return;
+      }
+      if (result === "dismissed") return;
+      void navigate({ to: "/install" });
+    } finally {
+      setInstalling(false);
+    }
+  }
+
   const moreActive = MORE.some((n) => n.to === pathname) || pathname === "/install";
 
   return (
@@ -144,16 +174,20 @@ export function Shell({ children }: { children: ReactNode }) {
                   <span className="size-1.5 rounded-full bg-accent" style={{ animation: "pulse-dot 1.6s ease-in-out infinite" }} />
                 ) : null}
               </label>
-              <Link
-                to="/install"
+              <button
+                type="button"
+                disabled={standalone || installing}
+                onClick={() => void onGetApp()}
                 className={cn(
                   "inline-flex h-11 items-center gap-2 rounded-md px-3 text-sm",
                   pathname === "/install" ? "bg-accent text-accent-fg" : "bg-elevated text-fg",
                 )}
               >
                 <Download className="size-4" />
-                <span className="hidden sm:inline">Get app</span>
-              </Link>
+                <span className="hidden sm:inline">
+                  {standalone ? "Installed" : installing ? "Installing…" : "Get app"}
+                </span>
+              </button>
             </div>
           </div>
         </header>
@@ -195,16 +229,17 @@ export function Shell({ children }: { children: ReactNode }) {
                   </Link>
                 );
               })}
-              <Link
-                to="/install"
+              <button
+                type="button"
+                onClick={() => void onGetApp()}
                 className={cn(
                   "flex min-h-12 items-center justify-center gap-2 rounded-md text-xs",
                   pathname === "/install" ? "bg-elevated text-accent" : "text-muted",
                 )}
               >
                 <Download className="size-4" />
-                Install
-              </Link>
+                {standalone ? "Installed" : "Install"}
+              </button>
             </div>
           ) : null}
           <div className="grid grid-cols-5">
