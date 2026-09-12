@@ -665,6 +665,10 @@ export function productBySku(sku: string) {
   return PRODUCTS.find((p) => p.sku === sku);
 }
 
+export function productImageSrc(sku: string) {
+  return `/products/${sku}.jpg`;
+}
+
 export function productsForRole(role: string) {
   return PRODUCTS.filter((p) => p.role === role);
 }

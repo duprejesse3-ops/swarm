@@ -1,5 +1,5 @@
 import { ExternalLink } from "lucide-react";
-import { productBySku } from "@/lib/catalog";
+import { productBySku, productImageSrc } from "@/lib/catalog";
 import type { Organism } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -44,7 +44,11 @@ function ConversationAd({ organism }: { organism: Organism }) {
         <span className="font-mono text-[10px] uppercase tracking-widest text-subtle">X / Reddit</span>
       </div>
       <div className="mt-4 flex gap-3">
-        <div className="size-9 shrink-0 rounded-full bg-surface shadow-[var(--shadow-border)]" />
+        <img
+          src={productImageSrc(organism.sku)}
+          alt=""
+          className="size-9 shrink-0 rounded-full object-cover outline outline-1 -outline-offset-1 outline-white/10"
+        />
         <div className="min-w-0">
           <p className="text-sm font-medium">operator · just now</p>
           <p className="mt-2 text-sm leading-relaxed">
@@ -74,7 +78,13 @@ function ProofAd({
   price?: number;
 }) {
   return (
-    <div className="min-w-0 overflow-hidden rounded-xl bg-elevated p-5 shadow-[var(--shadow-border)]">
+    <div className="min-w-0 overflow-hidden rounded-xl bg-elevated shadow-[var(--shadow-border)]">
+      <img
+        src={productImageSrc(organism.sku)}
+        alt={skuName ?? organism.sku}
+        className="aspect-[3/2] w-full object-cover outline outline-1 -outline-offset-1 outline-white/10"
+      />
+      <div className="p-5">
       <div className="flex items-center justify-between">
         <Badge variant="accent">Proof-loop</Badge>
         <span className="font-mono text-[10px] uppercase tracking-widest text-subtle">
@@ -102,6 +112,7 @@ function ProofAd({
           {organism.cta}
         </a>
       </Button>
+      </div>
     </div>
   );
 }

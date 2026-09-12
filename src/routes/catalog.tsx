@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { FORMATS, PRODUCTS, ROLES, SITE, SWARM_SKU } from "@/lib/catalog";
+import { FORMATS, PRODUCTS, ROLES, SITE, SWARM_SKU, productImageSrc } from "@/lib/catalog";
 import type { Product } from "@/lib/types";
 import { listingFor } from "@/lib/listing";
 import { copyToClipboard } from "@/lib/utils";
@@ -94,19 +94,26 @@ function CatalogPage() {
               <button
                 type="button"
                 onClick={() => setOpen(p.sku)}
-                className="w-full rounded-xl bg-surface p-4 text-left shadow-[var(--shadow-border)] hover:bg-elevated"
+                className="flex w-full gap-3 rounded-xl bg-surface p-3 text-left shadow-[var(--shadow-border)] hover:bg-elevated"
               >
-                <div className="flex items-center justify-between gap-3">
-                  <span className="font-mono text-[10px] uppercase tracking-widest text-subtle">
-                    {p.sku}
-                  </span>
-                  <span className="font-mono text-sm tabular-nums">${p.price}</span>
-                </div>
-                <p className="mt-1 font-medium">{p.name}</p>
-                <p className="mt-1 text-sm text-muted">{p.job}</p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  <Badge>{p.format}</Badge>
-                  <Badge variant="accent">{p.role}</Badge>
+                <img
+                  src={productImageSrc(p.sku)}
+                  alt=""
+                  className="size-16 shrink-0 rounded-lg object-cover outline outline-1 -outline-offset-1 outline-white/10"
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="font-mono text-[10px] uppercase tracking-widest text-subtle">
+                      {p.sku}
+                    </span>
+                    <span className="font-mono text-sm tabular-nums">${p.price}</span>
+                  </div>
+                  <p className="mt-1 font-medium">{p.name}</p>
+                  <p className="mt-1 text-sm text-muted">{p.job}</p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <Badge>{p.format}</Badge>
+                    <Badge variant="accent">{p.role}</Badge>
+                  </div>
                 </div>
               </button>
             </li>
@@ -123,7 +130,13 @@ function ProductDetail({ product }: { product: Product }) {
   const listing = listingFor(product);
   return (
     <Card className="h-fit lg:sticky lg:top-20">
-      <CardContent className="pt-5">
+      <CardContent className="p-0 pt-0">
+        <img
+          src={productImageSrc(product.sku)}
+          alt={product.name}
+          className="aspect-[3/2] w-full object-cover outline outline-1 -outline-offset-1 outline-white/10"
+        />
+        <div className="p-5">
         <p className="font-mono text-[10px] uppercase tracking-widest text-subtle">{product.sku}</p>
         <h2 className="mt-1 text-xl font-medium">{product.name}</h2>
         <p className="mt-2 text-sm text-muted">{product.pain}</p>
@@ -170,6 +183,7 @@ function ProductDetail({ product }: { product: Product }) {
         </div>
         <div className="mt-4">
           <HijackPanel sku={product.sku} intent={intent} />
+        </div>
         </div>
       </CardContent>
     </Card>
