@@ -69,17 +69,28 @@ export function redditComment(organism: Organism, dest?: Destinations) {
   const d = destOf(dest);
   const product = productBySku(organism.sku);
   const name = product?.name ?? organism.sku;
-  const price = product ? `$${product.price} one-time` : "";
   const maker = d.redditUser
-    ? `I'm the maker (u/${d.redditUser}). Questions welcome — no DMs.`
-    : "Questions welcome — no DMs.";
+    ? `Built by u/${d.redditUser} — happy to answer implementation questions in the thread, no DMs.`
+    : "Happy to answer implementation questions in the thread — no DMs.";
+  // Deliberately not organism.body: that copy is written for paid-channel
+  // ad slots (X, Google) and leads with price by design there. Reddit gets
+  // its own voice built straight from the product's job/proof/format —
+  // what it does and how, no price, no "buy" framing. r/smallbusiness and
+  // similar subs ban feed posts that read as an ad; this is meant to read
+  // as a dev sharing something they built, not a pitch.
+  const article = product && /^[aeiou]/i.test(product.format) ? "an" : "a";
+  const whatItIs = product
+    ? `${product.job} Built as ${article} ${product.format.toLowerCase()}.`
+    : organism.headline;
   return [
-    price ? `${name} — ${price}` : name,
-    organism.body,
-    `Proof: ${organism.proofHook}`,
-    organism.landingUrl,
+    name,
+    whatItIs,
+    organism.proofHook,
+    `Spec / source: ${organism.landingUrl}`,
     maker,
-  ].join("\n\n");
+  ]
+    .filter(Boolean)
+    .join("\n\n");
 }
 
 export function organismPacket(organism: Organism) {
