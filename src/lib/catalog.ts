@@ -666,7 +666,13 @@ export function productBySku(sku: string) {
 }
 
 export function productImageSrc(sku: string) {
-  return `/products/${sku}.jpg`;
+  // Was `/products/${sku}.jpg` — a path that exists on neither this app's
+  // own domain nor the main site. Real product photos are served by
+  // multinicheai.com's Product-image.mts edge function at
+  // /product-image/<sku>.png (see netlify/edge-functions/Product-image.mts
+  // in the Jblessd repo), and SWARM is a separate Vercel deployment, so this
+  // needs the absolute URL, not a same-origin relative path.
+  return `${SITE}/product-image/${sku}.png`;
 }
 
 export function productsForRole(role: string) {
