@@ -51,6 +51,14 @@ export type Organism = {
   verifiedLandings?: number;
   verifiedRevenue?: number;
   verifiedAt?: string;
+  /**
+   * Set once autopilot has actually posted this organism to a real
+   * channel via src/lib/social-post.ts — a real API call, not a compose
+   * window a human still has to press send on. Keyed by channel so an
+   * organism can be posted to X and Reddit independently, and so autoDeploy
+   * never double-posts the same organism to the same place twice.
+   */
+  deployed?: Partial<Record<"x" | "reddit", { url: string; at: number }>>;
 };
 
 export type Swarm = {

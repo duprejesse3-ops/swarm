@@ -15,8 +15,10 @@ import {
 } from "./genome";
 import type { Activity, Destinations, GeneratedCopy, IntentPulse, LiveHit, Organism, Swarm } from "./types";
 import { uid } from "./utils";
-import { DEFAULT_DESTINATIONS } from "./deploy";
+import { DEFAULT_DESTINATIONS, destOf, tweetText, redditComment } from "./deploy";
 import { applyRealPerformance, fetchRealPerformance, registerOrganism } from "./real-performance";
+import { findRedditPromoThread, postRedditComment, postTweet } from "./social-post";
+import { pickDeployCandidate } from "./autodeploy";
 
 type SwarmState = {
   hydrated: boolean;
@@ -31,6 +33,10 @@ type SwarmState = {
   lastAutoEvolveAt: number;
   lastLiveScanAt: number;
   lastRealSyncAt: number;
+  /** Wall-clock time of the last successful real post per channel — see autodeploy.ts's cooldowns. */
+  lastAutoPostAt: { x: number; reddit: number };
+  /** Reddit thing_ids autopilot has already commented in, so a second organism never double-comments the same weekly thread. */
+  postedRedditThreadIds: string[];
   destinations: Destinations;
   setHydrated: () => void;
   select: (id: string | null) => void;
@@ -41,6 +47,15 @@ type SwarmState = {
   syncRealPerformance: () => Promise<void>;
   listen: () => void;
   autoStep: () => void;
+  /**
+   * Actually posts the best eligible not-yet-posted organism to X and/or
+   * Reddit via src/lib/social-post.ts — a real API call, not a compose
+   * window. Safe to call every tick: pickDeployCandidate's cooldowns and
+   * the deployed-tracking on each organism make repeated calls a no-op
+   * until there's real work to do. Never throws — network/credential
+   * failures land in activities as a quiet log line, not a crash.
+   */
+  autoDeploy: () => Promise<void>;
   hijack: (opts: {
     sku: string;
     intent: string;
@@ -88,6 +103,8 @@ function initial(): Pick<
   | "lastAutoEvolveAt"
   | "lastLiveScanAt"
   | "lastRealSyncAt"
+  | "lastAutoPostAt"
+  | "postedRedditThreadIds"
   | "destinations"
 > {
   return {
@@ -107,6 +124,8 @@ function initial(): Pick<
     ],
     lastAutoHijackAt: 0,
     lastAutoEvolveAt: 0,
+    lastAutoPostAt: { x: 0, reddit: 0 },
+    postedRedditThreadIds: [],
     lastLiveScanAt: 0,
     lastRealSyncAt: 0,
     destinations: { ...DEFAULT_DESTINATIONS },
@@ -289,6 +308,104 @@ export const useSwarmStore = create<SwarmState>()(
           set({ lastRealSyncAt: now }); // claim the slot before the await so overlapping ticks don't double-fire
           void get().syncRealPerformance();
         }
+        void get().autoDeploy();
+      },
+      autoDeploy: async () => {
+        const now = Date.now();
+        const s = get();
+        const dest = destOf(s.destinations);
+
+        // X: a plain, low-risk API call. pickDeployCandidate already
+        // enforces the cooldown and "not already posted to x" — a call
+        // here only fires when there's real work to do.
+        const xCandidate = pickDeployCandidate(s.organisms, s.swarms, "x", now, s.lastAutoPostAt.x);
+        if (xCandidate) {
+          // Claim the cooldown before the await, same reasoning as
+          // lastRealSyncAt above — otherwise two ticks 1800ms apart could
+          // both see the old lastAutoPostAt and double-post before either
+          // network call resolves.
+          set((cur) => ({ lastAutoPostAt: { ...cur.lastAutoPostAt, x: now } }));
+          // Guarded: postTweet is a createServerFn RPC. Outside a real
+          // server/client runtime pairing (e.g. this store under test, or
+          // a genuinely unreachable API route in prod) the call itself
+          // throws rather than resolving to {ok:false} — that's a
+          // framework-level failure postTweetImpl's own try/catch never
+          // gets a chance to handle, so autoDeploy has to catch it here
+          // instead of letting it become an unhandled rejection.
+          try {
+            const result = await postTweet({ data: { text: tweetText(xCandidate) } });
+            if (result.ok) {
+              set((cur) => ({
+                organisms: cur.organisms.map((o) =>
+                  o.id === xCandidate.id
+                    ? { ...o, status: "live" as const, liveAt: o.liveAt ?? now, deployed: { ...o.deployed, x: { url: result.url, at: now } } }
+                    : o,
+                ),
+                activities: [log("live", `Auto-posted to X · ${xCandidate.headline}`), ...cur.activities].slice(0, 24),
+              }));
+            } else {
+              // Quiet, single log line — not spammy, and the cooldown
+              // claimed above means this won't retry every 1800ms even on
+              // failure.
+              set((cur) => ({
+                activities: [log("pilot", `Auto-post to X skipped: ${result.error}`), ...cur.activities].slice(0, 24),
+              }));
+            }
+          } catch (err) {
+            set((cur) => ({
+              activities: [
+                log("pilot", `Auto-post to X unreachable: ${err instanceof Error ? err.message : "unknown error"}`),
+                ...cur.activities,
+              ].slice(0, 24),
+            }));
+          }
+        }
+
+        // Reddit: only ever a comment in a thread findRedditPromoThread
+        // actually located, and never twice in the same thread.
+        const redditCandidate = pickDeployCandidate(s.organisms, s.swarms, "reddit", now, s.lastAutoPostAt.reddit);
+        if (redditCandidate) {
+          try {
+            const thread = await findRedditPromoThread({ data: { sub: dest.redditSub } });
+            if (!thread) {
+              // No confident match this cycle — this is the expected
+              // common case most ticks, not a failure, so it doesn't even
+              // log.
+              return;
+            }
+            if (get().postedRedditThreadIds.includes(thread.threadId)) return;
+            set((cur) => ({ lastAutoPostAt: { ...cur.lastAutoPostAt, reddit: now } }));
+            const body = redditComment(redditCandidate, dest);
+            const result = await postRedditComment({
+              data: { threadId: thread.threadId, permalink: thread.permalink, body },
+            });
+            if (result.ok) {
+              set((cur) => ({
+                organisms: cur.organisms.map((o) =>
+                  o.id === redditCandidate.id
+                    ? { ...o, status: "live" as const, liveAt: o.liveAt ?? now, deployed: { ...o.deployed, reddit: { url: result.url, at: now } } }
+                    : o,
+                ),
+                postedRedditThreadIds: [...cur.postedRedditThreadIds, thread.threadId].slice(-50),
+                activities: [
+                  log("live", `Auto-posted to r/${dest.redditSub}'s promo thread · ${redditCandidate.headline}`),
+                  ...cur.activities,
+                ].slice(0, 24),
+              }));
+            } else {
+              set((cur) => ({
+                activities: [log("pilot", `Auto-post to Reddit skipped: ${result.error}`), ...cur.activities].slice(0, 24),
+              }));
+            }
+          } catch (err) {
+            set((cur) => ({
+              activities: [
+                log("pilot", `Auto-post to Reddit unreachable: ${err instanceof Error ? err.message : "unknown error"}`),
+                ...cur.activities,
+              ].slice(0, 24),
+            }));
+          }
+        }
       },
       hijack: ({ sku, intent, copies, name }) => {
         const product = productBySku(sku) ?? PRODUCTS[0]!;
@@ -454,6 +571,8 @@ export const useSwarmStore = create<SwarmState>()(
         lastAutoEvolveAt: s.lastAutoEvolveAt,
         lastLiveScanAt: s.lastLiveScanAt,
         lastRealSyncAt: s.lastRealSyncAt,
+        lastAutoPostAt: s.lastAutoPostAt ?? { x: 0, reddit: 0 },
+        postedRedditThreadIds: s.postedRedditThreadIds ?? [],
         destinations: s.destinations ?? DEFAULT_DESTINATIONS,
       }),
       merge: (persisted, current) => {

@@ -20,6 +20,38 @@ The Grok preview at grok-sandbox.com sleeps. Cloudflare 521 means that tunnel di
 
 Build command is `npm run build`. Optional env: `XAI_API_KEY` (Scan live X / Grok copy). Without it, autopilot still runs on the local genome.
 
+## Autonomous posting (does not depend on a human clicking Post)
+
+By default, "post" opens a pre-filled compose window and waits for a human
+to press send. Setting these env vars switches autopilot over to actually
+posting champion organisms itself, via `src/lib/social-post.ts`:
+
+- `X_API_KEY`, `X_API_SECRET`, `X_ACCESS_TOKEN`, `X_ACCESS_SECRET` — an X
+  (Twitter) app with OAuth 1.0a user-context credentials for the posting
+  account, scoped to allow writing tweets. Generate these from the X
+  Developer Portal against the account in `DEFAULT_DESTINATIONS.xHandle`
+  (`src/lib/deploy.ts`).
+- `REDDIT_CLIENT_ID`, `REDDIT_CLIENT_SECRET`, `REDDIT_USERNAME`,
+  `REDDIT_PASSWORD` — a Reddit **script-type** app
+  (reddit.com/prefs/apps) owned by the posting account
+  (`DEFAULT_DESTINATIONS.redditUser`), plus that account's own username and
+  password (the script-app auth flow needs both, not just the app's own
+  client id/secret).
+
+**Reddit posting is deliberately narrower than X posting.** Several subs in
+`REDDIT_PROMO_THREAD` remove any product post from the main feed and ban
+the account for it — the only safe target is that week's official promo
+thread, and it changes weekly. `findRedditPromoThread()` searches for it
+and only returns a match when confident (recent, stickied or clearly
+titled); autopilot only posts a comment when a match is found, and never
+falls back to posting into the main feed. No confident match this week
+means no Reddit post that week — not a guess.
+
+Without these env vars set, autopilot behaves exactly as before: it marks
+an organism live and leaves the actual post to the manual buttons in the
+UI, which still work as a fallback / manual override even once autonomous
+posting is on.
+
 ## Install (Android + Windows)
 
 This is a progressive web app. There is **no Play Store APK** and **no Microsoft Store listing**. Chrome and Edge install SWARM as a real app window (home screen / Start menu / taskbar).

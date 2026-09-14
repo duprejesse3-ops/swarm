@@ -123,17 +123,34 @@ export function OrganismCard({
       </button>
       {targets.length > 0 ? (
         <div className="flex flex-wrap gap-2 px-4 pb-4">
-          {targets.map((target, i) => (
-            <Button
-              key={target.id}
-              size="sm"
-              variant={i === 0 ? "default" : "secondary"}
-              className="min-h-11 flex-1"
-              onClick={(e) => void post(target, e)}
-            >
-              {target.label}
-            </Button>
-          ))}
+          {targets.map((target, i) => {
+            // Once autopilot has actually posted this organism for real
+            // (src/lib/social-post.ts), the button becomes a link to what
+            // was actually published instead of re-opening a compose
+            // window — posting again from here would be a second, human
+            // -triggered post on top of the automated one.
+            const auto = target.id === "x" || target.id === "reddit" ? organism.deployed?.[target.id] : undefined;
+            if (auto) {
+              return (
+                <Button key={target.id} asChild size="sm" variant="secondary" className="min-h-11 flex-1">
+                  <a href={auto.url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
+                    Posted ✓ ({target.id === "x" ? "X" : "Reddit"})
+                  </a>
+                </Button>
+              );
+            }
+            return (
+              <Button
+                key={target.id}
+                size="sm"
+                variant={i === 0 ? "default" : "secondary"}
+                className="min-h-11 flex-1"
+                onClick={(e) => void post(target, e)}
+              >
+                {target.label}
+              </Button>
+            );
+          })}
         </div>
       ) : null}
     </article>

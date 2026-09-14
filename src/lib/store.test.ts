@@ -130,3 +130,36 @@ describe("autopilot roster rotation", () => {
     assert.ok(!sw.retired, "a manually paused swarm was never retired in the first place");
   });
 });
+
+describe("autoDeploy", () => {
+  it("is a no-op when nothing is champion or live yet — never throws either way", async () => {
+    const before = useSwarmStore.getState().activities.length;
+    await useSwarmStore.getState().autoDeploy();
+    const after = useSwarmStore.getState();
+    // The seed swarm's organisms start "alive", not champion/live, so
+    // pickDeployCandidate finds nothing and autoDeploy should return
+    // having touched neither activities nor lastAutoPostAt.
+    assert.equal(after.activities.length, before);
+    assert.equal(after.lastAutoPostAt.x, 0);
+  });
+
+  it("degrades gracefully instead of throwing when the post RPC is unreachable", async () => {
+    // postTweet is a createServerFn — outside the real TanStack Start
+    // server/client runtime pairing (exactly this test's environment) the
+    // call itself throws, which is precisely the case autoDeploy's
+    // try/catch exists for. Give it a real champion so pickDeployCandidate
+    // actually picks something, then confirm the whole call resolves
+    // cleanly and logs the failure instead of rejecting.
+    const s = useSwarmStore.getState();
+    const org = s.organisms[0]!;
+    useSwarmStore.setState({
+      organisms: s.organisms.map((o) => (o.id === org.id ? { ...o, status: "champion" as const } : o)),
+    });
+    await assert.doesNotReject(() => useSwarmStore.getState().autoDeploy());
+    const after = useSwarmStore.getState();
+    assert.ok(
+      after.activities.some((a) => /Auto-post to X unreachable/.test(a.text)),
+      "should log the RPC failure rather than silently dropping it or throwing",
+    );
+  });
+});

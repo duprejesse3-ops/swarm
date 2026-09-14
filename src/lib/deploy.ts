@@ -57,7 +57,7 @@ function stripAt(value: string) {
   return value.trim().replace(/^@/, "");
 }
 
-function stripSub(value: string) {
+export function stripSub(value: string) {
   return value.trim().replace(/^\/?(r\/)?/i, "").replace(/\s+/g, "");
 }
 
