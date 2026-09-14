@@ -8,6 +8,7 @@ import {
   evolveLocal,
   livePulse,
   markChampions,
+  seedExtraSwarms,
   seedOrganisms,
   seedPulses,
   spawnLocalSwarm,
@@ -90,9 +91,12 @@ function initial(): Pick<
   | "lastRealSyncAt"
   | "destinations"
 > {
+  const extra = seedExtraSwarms(4);
   return {
-    swarms: seedSwarms(),
-    organisms: markChampions(seedOrganisms()),
+    swarms: [...seedSwarms(), ...extra.swarms],
+    organisms: markChampions(
+      cullDuplicates([...seedOrganisms(), ...extra.organisms]),
+    ),
     pulses: seedPulses(16),
     selectedId: "org_seed_01",
     pulseCursor: 16,

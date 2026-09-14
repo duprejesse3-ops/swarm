@@ -1,5 +1,5 @@
 import { PRODUCTS, SITE, productBySku } from "./catalog";
-import type { Channel, GeneratedCopy, IntentPulse, Organism, Product } from "./types";
+import type { Channel, GeneratedCopy, IntentPulse, Organism, Product, Swarm } from "./types";
 import { clamp, uid } from "./utils";
 
 export const CHANNELS: { id: Channel; label: string; native: string }[] = [
@@ -456,4 +456,40 @@ export function seedOrganisms(): Organism[] {
     };
   });
   return tickOrganisms(all, 8, 48);
+}
+
+// initial() (store.ts) is single-SKU on its own: it only ever calls
+// seedOrganisms(), which hardcodes AI-AB-002. Fresh installs — and every
+// resetLab() — landed on one product with nothing to compete against until
+// autopilot's hijack cooldown eventually introduced a second one. This
+// spawns a handful of additional swarms on distinct SKUs up front so a
+// fresh/reset lab starts with real cross-product competition immediately.
+export function seedExtraSwarms(count = 4): { swarms: Swarm[]; organisms: Organism[] } {
+  const swarms: Swarm[] = [];
+  const organisms: Organism[] = [];
+  const seen = new Set<string>(["AI-AB-002"]); // already covered by the primary seed swarm
+  let i = 0;
+  while (swarms.length < count && i < INTENT_POOL.length) {
+    const item = INTENT_POOL[i]!;
+    i += 1;
+    if (seen.has(item.sku)) continue;
+    seen.add(item.sku);
+    const product = productBySku(item.sku);
+    if (!product) continue;
+    const swarmId = uid("swarm");
+    const swarm: Swarm = {
+      id: swarmId,
+      name: `Hijack · ${product.name}`,
+      generation: 1,
+      dailyBudget: 36,
+      running: true,
+      startedAt: Date.now(),
+      simulatedHours: 0,
+    };
+    let born = spawnLocalSwarm({ swarmId, product, intent: item.text, generation: 1 });
+    born = tickOrganisms(born, 2, swarm.dailyBudget);
+    swarms.push(swarm);
+    organisms.push(...born);
+  }
+  return { swarms, organisms };
 }
