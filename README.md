@@ -20,37 +20,79 @@ The Grok preview at grok-sandbox.com sleeps. Cloudflare 521 means that tunnel di
 
 Build command is `npm run build`. Optional env: `XAI_API_KEY` (Scan live X / Grok copy). Without it, autopilot still runs on the local genome.
 
-## Autonomous posting (does not depend on a human clicking Post)
+## Autonomous posting (a real browser agent, not an API, not a click)
 
 By default, "post" opens a pre-filled compose window and waits for a human
-to press send. Setting these env vars switches autopilot over to actually
-posting champion organisms itself, via `src/lib/social-post.ts`:
+to press send. Setting this up switches posting over to a scheduled,
+server-side agent that drives a real logged-in browser through X and
+Reddit's own UI — the same clicks a human makes — instead of either
+waiting for a click or calling an official API.
 
-- `X_API_KEY`, `X_API_SECRET`, `X_ACCESS_TOKEN`, `X_ACCESS_SECRET` — an X
-  (Twitter) app with OAuth 1.0a user-context credentials for the posting
-  account, scoped to allow writing tweets. Generate these from the X
-  Developer Portal against the account in `DEFAULT_DESTINATIONS.xHandle`
-  (`src/lib/deploy.ts`).
-- `REDDIT_CLIENT_ID`, `REDDIT_CLIENT_SECRET`, `REDDIT_USERNAME`,
-  `REDDIT_PASSWORD` — a Reddit **script-type** app
-  (reddit.com/prefs/apps) owned by the posting account
-  (`DEFAULT_DESTINATIONS.redditUser`), plus that account's own username and
-  password (the script-app auth flow needs both, not just the app's own
-  client id/secret).
+**Why a browser agent instead of the API.** No developer app, no OAuth
+review, no per-post cost. The tradeoff, worth knowing going in: this uses
+a real, full-access login session rather than a scoped API token, and
+both platforms actively watch for automated browser sessions — treat the
+captured session with the same care as a password, and know that this
+carries a real account-safety risk an official API integration wouldn't.
 
-**Reddit posting is deliberately narrower than X posting.** Several subs in
-`REDDIT_PROMO_THREAD` remove any product post from the main feed and ban
-the account for it — the only safe target is that week's official promo
-thread, and it changes weekly. `findRedditPromoThread()` searches for it
-and only returns a match when confident (recent, stickied or clearly
-titled); autopilot only posts a comment when a match is found, and never
-falls back to posting into the main feed. No confident match this week
-means no Reddit post that week — not a guess.
+### 1. Capture a login session (once, by hand, on your own machine)
 
-Without these env vars set, autopilot behaves exactly as before: it marks
-an organism live and leaves the actual post to the manual buttons in the
-UI, which still work as a fallback / manual override even once autonomous
-posting is on.
+```bash
+npx playwright install chromium   # once
+node scripts/capture-login-session.mjs x
+node scripts/capture-login-session.mjs reddit
+```
+
+Each run opens a real browser, waits for you to log in normally, then
+prints a value to set as an env var:
+
+- `X_BROWSER_SESSION` — from the `x` capture
+- `REDDIT_BROWSER_SESSION` — from the `reddit` capture
+
+### 2. Set the cron secret
+
+- `CRON_SECRET` — any random string. Vercel automatically sends it as
+  `Authorization: Bearer $CRON_SECRET` on scheduled requests to
+  `/api/cron/auto-deploy`; without it set, that route refuses every
+  request rather than running unauthenticated.
+
+### 3. Deploy
+
+`vercel.json` already schedules `/api/cron/auto-deploy` every 30 minutes
+(matching X's cooldown in `src/lib/autodeploy.ts` — Reddit's own 6-hour
+cooldown just means most invocations are a no-op for that channel, which
+is expected). **Vercel's Hobby plan only allows once-daily cron** — that
+schedule needs Pro or above; on Hobby, change it to something like
+`"0 14 * * *"` and accept a much slower posting cadence.
+
+### How it actually works
+
+The whole swarm/organism simulation lives in the browser's own
+`localStorage` — there's no server-side copy of it. `autoStep` pushes the
+current champion/live organisms into a small Postgres table
+(`swarm_deploy_candidates`, see `migrations/0001_swarm_deploy_candidates.sql`)
+whenever the app is open; the cron route reads *only* from that table, so
+it can pick something to post and actually post it with zero browser tabs
+open anywhere. `src/lib/cron-deploy.ts` picks the fittest not-yet-posted
+candidate per channel and calls the real browser-agent poster in
+`src/lib/browser-agent/`. Next time the app is open, it reads back
+whatever the cron job posted and shows the real URL.
+
+**Reddit posting stays narrow on purpose.** Several subs in
+`REDDIT_PROMO_THREAD` (`src/lib/deploy.ts`) remove any product post from
+the main feed and ban the account for it — the only safe target is that
+week's official promo thread, and it changes weekly.
+`findRedditPromoThreadImpl` (`src/lib/social-post.ts`) searches for it and
+only returns a match when confident; the cron route only posts a comment
+when a match is found, and never falls back to the main feed. No
+confident match this cycle means no Reddit post this cycle — not a guess.
+It also never comments twice into the same thread, even across different
+organisms.
+
+Without `X_BROWSER_SESSION` / `REDDIT_BROWSER_SESSION` set, the cron
+route's posts simply fail with a clear "no session captured" error and
+nothing gets marked posted — the manual buttons in the UI keep working
+exactly as before as a fallback.
 
 ## Install (Android + Windows)
 

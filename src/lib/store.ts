@@ -15,10 +15,9 @@ import {
 } from "./genome";
 import type { Activity, Destinations, GeneratedCopy, IntentPulse, LiveHit, Organism, Swarm } from "./types";
 import { uid } from "./utils";
-import { DEFAULT_DESTINATIONS, destOf, tweetText, redditComment } from "./deploy";
+import { DEFAULT_DESTINATIONS } from "./deploy";
 import { applyRealPerformance, fetchRealPerformance, registerOrganism } from "./real-performance";
-import { findRedditPromoThread, postRedditComment, postTweet } from "./social-post";
-import { pickDeployCandidate } from "./autodeploy";
+import type { DeployCandidateInput } from "./deploy-queue";
 
 type SwarmState = {
   hydrated: boolean;
@@ -33,10 +32,7 @@ type SwarmState = {
   lastAutoEvolveAt: number;
   lastLiveScanAt: number;
   lastRealSyncAt: number;
-  /** Wall-clock time of the last successful real post per channel — see autodeploy.ts's cooldowns. */
-  lastAutoPostAt: { x: number; reddit: number };
-  /** Reddit thing_ids autopilot has already commented in, so a second organism never double-comments the same weekly thread. */
-  postedRedditThreadIds: string[];
+  lastDeploySyncAt: number;
   destinations: Destinations;
   setHydrated: () => void;
   select: (id: string | null) => void;
@@ -48,12 +44,15 @@ type SwarmState = {
   listen: () => void;
   autoStep: () => void;
   /**
-   * Actually posts the best eligible not-yet-posted organism to X and/or
-   * Reddit via src/lib/social-post.ts — a real API call, not a compose
-   * window. Safe to call every tick: pickDeployCandidate's cooldowns and
-   * the deployed-tracking on each organism make repeated calls a no-op
-   * until there's real work to do. Never throws — network/credential
-   * failures land in activities as a quiet log line, not a crash.
+   * Pushes current champion/live organisms to the server-side deploy
+   * queue (src/lib/deploy-queue.ts) and pulls back anything the cron
+   * route (src/routes/api/cron/auto-deploy.ts) has actually posted while
+   * nobody had the app open. This does NOT post anything itself — the
+   * real X/Reddit browser automation runs entirely server-side, on a
+   * schedule, independent of the client. Safe to call every tick: an
+   * upsert plus a read of already-known ids is cheap, and idempotent.
+   * Never throws — a sync failure lands in activities as a quiet log
+   * line, not a crash.
    */
   autoDeploy: () => Promise<void>;
   hijack: (opts: {
@@ -103,8 +102,7 @@ function initial(): Pick<
   | "lastAutoEvolveAt"
   | "lastLiveScanAt"
   | "lastRealSyncAt"
-  | "lastAutoPostAt"
-  | "postedRedditThreadIds"
+  | "lastDeploySyncAt"
   | "destinations"
 > {
   return {
@@ -124,10 +122,9 @@ function initial(): Pick<
     ],
     lastAutoHijackAt: 0,
     lastAutoEvolveAt: 0,
-    lastAutoPostAt: { x: 0, reddit: 0 },
-    postedRedditThreadIds: [],
     lastLiveScanAt: 0,
     lastRealSyncAt: 0,
+    lastDeploySyncAt: 0,
     destinations: { ...DEFAULT_DESTINATIONS },
   };
 }
@@ -312,99 +309,85 @@ export const useSwarmStore = create<SwarmState>()(
       },
       autoDeploy: async () => {
         const now = Date.now();
+        if (now - get().lastDeploySyncAt < 20_000) return; // no need to hammer this every 1800ms tick
+        set({ lastDeploySyncAt: now });
+
         const s = get();
-        const dest = destOf(s.destinations);
+        const runningSwarmIds = new Set(s.swarms.filter((sw) => sw.running).map((sw) => sw.id));
+        const eligible: Organism[] = s.organisms.filter(
+          (o) => runningSwarmIds.has(o.swarmId) && (o.status === "champion" || o.status === "live"),
+        );
+        if (eligible.length === 0) return;
 
-        // X: a plain, low-risk API call. pickDeployCandidate already
-        // enforces the cooldown and "not already posted to x" — a call
-        // here only fires when there's real work to do.
-        const xCandidate = pickDeployCandidate(s.organisms, s.swarms, "x", now, s.lastAutoPostAt.x);
-        if (xCandidate) {
-          // Claim the cooldown before the await, same reasoning as
-          // lastRealSyncAt above — otherwise two ticks 1800ms apart could
-          // both see the old lastAutoPostAt and double-post before either
-          // network call resolves.
-          set((cur) => ({ lastAutoPostAt: { ...cur.lastAutoPostAt, x: now } }));
-          // Guarded: postTweet is a createServerFn RPC. Outside a real
-          // server/client runtime pairing (e.g. this store under test, or
-          // a genuinely unreachable API route in prod) the call itself
-          // throws rather than resolving to {ok:false} — that's a
-          // framework-level failure postTweetImpl's own try/catch never
-          // gets a chance to handle, so autoDeploy has to catch it here
-          // instead of letting it become an unhandled rejection.
-          try {
-            const result = await postTweet({ data: { text: tweetText(xCandidate) } });
-            if (result.ok) {
-              set((cur) => ({
-                organisms: cur.organisms.map((o) =>
-                  o.id === xCandidate.id
-                    ? { ...o, status: "live" as const, liveAt: o.liveAt ?? now, deployed: { ...o.deployed, x: { url: result.url, at: now } } }
-                    : o,
-                ),
-                activities: [log("live", `Auto-posted to X · ${xCandidate.headline}`), ...cur.activities].slice(0, 24),
-              }));
-            } else {
-              // Quiet, single log line — not spammy, and the cooldown
-              // claimed above means this won't retry every 1800ms even on
-              // failure.
-              set((cur) => ({
-                activities: [log("pilot", `Auto-post to X skipped: ${result.error}`), ...cur.activities].slice(0, 24),
-              }));
-            }
-          } catch (err) {
-            set((cur) => ({
-              activities: [
-                log("pilot", `Auto-post to X unreachable: ${err instanceof Error ? err.message : "unknown error"}`),
-                ...cur.activities,
-              ].slice(0, 24),
-            }));
-          }
-        }
+        try {
+          // Dynamically imported so merely importing store.ts (e.g. under
+          // a plain Node test runner, no Vite) never pulls in
+          // deploy-queue.ts's own import of @/lib/db — that module runs a
+          // Vite-only import.meta.glob the instant it loads, unconditionally,
+          // which throws outside Vite even if nothing ever calls getSql().
+          const { syncDeployCandidates, readDeployStatus } = await import("./deploy-queue");
+          // Push what the client has computed locally into the server-side
+          // queue. The cron route (src/routes/api/cron/auto-deploy.ts) is
+          // what actually decides "post this one now" and drives the real
+          // browser — this call only keeps the server's view in sync, it
+          // never posts anything itself.
+          const candidates: DeployCandidateInput[] = eligible.map((o) => ({
+            id: o.id,
+            swarmId: o.swarmId,
+            sku: o.sku,
+            headline: o.headline,
+            body: o.body,
+            proofHook: o.proofHook,
+            landingUrl: o.landingUrl,
+            fitness: o.fitness,
+            status: o.status as "champion" | "live",
+          }));
+          await syncDeployCandidates({ data: { candidates } });
 
-        // Reddit: only ever a comment in a thread findRedditPromoThread
-        // actually located, and never twice in the same thread.
-        const redditCandidate = pickDeployCandidate(s.organisms, s.swarms, "reddit", now, s.lastAutoPostAt.reddit);
-        if (redditCandidate) {
-          try {
-            const thread = await findRedditPromoThread({ data: { sub: dest.redditSub } });
-            if (!thread) {
-              // No confident match this cycle — this is the expected
-              // common case most ticks, not a failure, so it doesn't even
-              // log.
-              return;
-            }
-            if (get().postedRedditThreadIds.includes(thread.threadId)) return;
-            set((cur) => ({ lastAutoPostAt: { ...cur.lastAutoPostAt, reddit: now } }));
-            const body = redditComment(redditCandidate, dest);
-            const result = await postRedditComment({
-              data: { threadId: thread.threadId, permalink: thread.permalink, body },
-            });
-            if (result.ok) {
-              set((cur) => ({
-                organisms: cur.organisms.map((o) =>
-                  o.id === redditCandidate.id
-                    ? { ...o, status: "live" as const, liveAt: o.liveAt ?? now, deployed: { ...o.deployed, reddit: { url: result.url, at: now } } }
-                    : o,
-                ),
-                postedRedditThreadIds: [...cur.postedRedditThreadIds, thread.threadId].slice(-50),
-                activities: [
-                  log("live", `Auto-posted to r/${dest.redditSub}'s promo thread · ${redditCandidate.headline}`),
-                  ...cur.activities,
-                ].slice(0, 24),
-              }));
-            } else {
-              set((cur) => ({
-                activities: [log("pilot", `Auto-post to Reddit skipped: ${result.error}`), ...cur.activities].slice(0, 24),
-              }));
-            }
-          } catch (err) {
-            set((cur) => ({
-              activities: [
-                log("pilot", `Auto-post to Reddit unreachable: ${err instanceof Error ? err.message : "unknown error"}`),
-                ...cur.activities,
-              ].slice(0, 24),
-            }));
-          }
+          // Pull back anything the cron job has posted since the last
+          // sync — this is how an organism the cron route posted while
+          // nobody had the tab open still ends up marked live with a real
+          // URL once someone opens the app again.
+          const statuses = await readDeployStatus({ data: { ids: eligible.map((o) => o.id) } });
+          const byId = new Map(statuses.map((st) => [st.id, st]));
+          const hasNews = statuses.some((st) => st.postedXUrl || st.postedRedditUrl);
+          if (!hasNews) return;
+
+          set((cur) => ({
+            organisms: cur.organisms.map((o) => {
+              const st = byId.get(o.id);
+              if (!st || (!st.postedXUrl && !st.postedRedditUrl)) return o;
+              const alreadyKnownX = o.deployed?.x?.url === st.postedXUrl;
+              const alreadyKnownReddit = o.deployed?.reddit?.url === st.postedRedditUrl;
+              if (alreadyKnownX && alreadyKnownReddit) return o;
+              return {
+                ...o,
+                status: "live" as const,
+                liveAt: o.liveAt ?? now,
+                deployed: {
+                  x: st.postedXUrl ? { url: st.postedXUrl, at: st.postedXAt ? Date.parse(st.postedXAt) : now } : o.deployed?.x,
+                  reddit: st.postedRedditUrl
+                    ? { url: st.postedRedditUrl, at: st.postedRedditAt ? Date.parse(st.postedRedditAt) : now }
+                    : o.deployed?.reddit,
+                },
+              };
+            }),
+            activities: [
+              log("live", "Autopilot posted while you were away — picked up the new links."),
+              ...cur.activities,
+            ].slice(0, 24),
+          }));
+        } catch (err) {
+          // Sync is best-effort — a briefly-unreachable server function
+          // must not crash the local simulation. The cron route will pick
+          // up whatever the client hasn't synced yet on its own schedule
+          // regardless.
+          set((cur) => ({
+            activities: [
+              log("pilot", `Deploy-queue sync skipped: ${err instanceof Error ? err.message : "unknown error"}`),
+              ...cur.activities,
+            ].slice(0, 24),
+          }));
         }
       },
       hijack: ({ sku, intent, copies, name }) => {
@@ -571,8 +554,7 @@ export const useSwarmStore = create<SwarmState>()(
         lastAutoEvolveAt: s.lastAutoEvolveAt,
         lastLiveScanAt: s.lastLiveScanAt,
         lastRealSyncAt: s.lastRealSyncAt,
-        lastAutoPostAt: s.lastAutoPostAt ?? { x: 0, reddit: 0 },
-        postedRedditThreadIds: s.postedRedditThreadIds ?? [],
+        lastDeploySyncAt: s.lastDeploySyncAt ?? 0,
         destinations: s.destinations ?? DEFAULT_DESTINATIONS,
       }),
       merge: (persisted, current) => {

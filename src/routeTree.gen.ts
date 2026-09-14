@@ -17,6 +17,7 @@ import { Route as ProductRouteImport } from './routes/product'
 import { Route as ScorecardRouteImport } from './routes/scorecard'
 import { Route as StudioRouteImport } from './routes/studio'
 import { Route as SwarmRouteImport } from './routes/swarm'
+import { Route as ApiCronAutoDeployRouteImport } from './routes/api/cron/auto-deploy'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -58,6 +59,11 @@ const SwarmRoute = SwarmRouteImport.update({
   path: '/swarm',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiCronAutoDeployRoute = ApiCronAutoDeployRouteImport.update({
+  id: '/api/cron/auto-deploy',
+  path: '/api/cron/auto-deploy',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -68,6 +74,7 @@ export interface FileRoutesByFullPath {
   '/scorecard': typeof ScorecardRoute
   '/studio': typeof StudioRoute
   '/swarm': typeof SwarmRoute
+  '/api/cron/auto-deploy': typeof ApiCronAutoDeployRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -78,6 +85,7 @@ export interface FileRoutesByTo {
   '/scorecard': typeof ScorecardRoute
   '/studio': typeof StudioRoute
   '/swarm': typeof SwarmRoute
+  '/api/cron/auto-deploy': typeof ApiCronAutoDeployRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -89,6 +97,7 @@ export interface FileRoutesById {
   '/scorecard': typeof ScorecardRoute
   '/studio': typeof StudioRoute
   '/swarm': typeof SwarmRoute
+  '/api/cron/auto-deploy': typeof ApiCronAutoDeployRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -101,6 +110,7 @@ export interface FileRouteTypes {
     | '/scorecard'
     | '/studio'
     | '/swarm'
+    | '/api/cron/auto-deploy'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -111,6 +121,7 @@ export interface FileRouteTypes {
     | '/scorecard'
     | '/studio'
     | '/swarm'
+    | '/api/cron/auto-deploy'
   id:
     | '__root__'
     | '/'
@@ -121,6 +132,7 @@ export interface FileRouteTypes {
     | '/scorecard'
     | '/studio'
     | '/swarm'
+    | '/api/cron/auto-deploy'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -132,6 +144,7 @@ export interface RootRouteChildren {
   ScorecardRoute: typeof ScorecardRoute
   StudioRoute: typeof StudioRoute
   SwarmRoute: typeof SwarmRoute
+  ApiCronAutoDeployRoute: typeof ApiCronAutoDeployRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -192,6 +205,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SwarmRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/cron/auto-deploy': {
+      id: '/api/cron/auto-deploy'
+      path: '/api/cron/auto-deploy'
+      fullPath: '/api/cron/auto-deploy'
+      preLoaderRoute: typeof ApiCronAutoDeployRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -204,6 +224,7 @@ const rootRouteChildren: RootRouteChildren = {
   ScorecardRoute: ScorecardRoute,
   StudioRoute: StudioRoute,
   SwarmRoute: SwarmRoute,
+  ApiCronAutoDeployRoute: ApiCronAutoDeployRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

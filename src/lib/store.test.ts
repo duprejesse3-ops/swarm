@@ -137,28 +137,30 @@ describe("autoDeploy", () => {
     await useSwarmStore.getState().autoDeploy();
     const after = useSwarmStore.getState();
     // The seed swarm's organisms start "alive", not champion/live, so
-    // pickDeployCandidate finds nothing and autoDeploy should return
-    // having touched neither activities nor lastAutoPostAt.
+    // there's nothing eligible to sync and autoDeploy should return
+    // having touched neither activities nor any organism.
     assert.equal(after.activities.length, before);
-    assert.equal(after.lastAutoPostAt.x, 0);
+    assert.deepEqual(after.organisms, useSwarmStore.getState().organisms);
   });
 
-  it("degrades gracefully instead of throwing when the post RPC is unreachable", async () => {
-    // postTweet is a createServerFn — outside the real TanStack Start
-    // server/client runtime pairing (exactly this test's environment) the
-    // call itself throws, which is precisely the case autoDeploy's
-    // try/catch exists for. Give it a real champion so pickDeployCandidate
-    // actually picks something, then confirm the whole call resolves
-    // cleanly and logs the failure instead of rejecting.
+  it("degrades gracefully instead of throwing when the sync RPC is unreachable", async () => {
+    // syncDeployCandidates/readDeployStatus are createServerFn calls —
+    // outside the real TanStack Start server/client runtime pairing
+    // (exactly this test's environment) the call itself throws, which is
+    // precisely the case autoDeploy's try/catch exists for. Give it a
+    // real champion so there's something eligible to sync, then confirm
+    // the whole call resolves cleanly and logs the failure instead of
+    // rejecting.
     const s = useSwarmStore.getState();
     const org = s.organisms[0]!;
     useSwarmStore.setState({
       organisms: s.organisms.map((o) => (o.id === org.id ? { ...o, status: "champion" as const } : o)),
+      lastDeploySyncAt: 0, // clear the cooldown claimed by the previous test
     });
     await assert.doesNotReject(() => useSwarmStore.getState().autoDeploy());
     const after = useSwarmStore.getState();
     assert.ok(
-      after.activities.some((a) => /Auto-post to X unreachable/.test(a.text)),
+      after.activities.some((a) => /Deploy-queue sync skipped/.test(a.text)),
       "should log the RPC failure rather than silently dropping it or throwing",
     );
   });

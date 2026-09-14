@@ -58,7 +58,15 @@ test("non-.sql entries are dropped (readdir also yields the auth/ directory)", (
 
 test("the auth schema ships outside the globbed directory", () => {
   const migrationsDir = join(projectRoot(), "migrations");
-  assert.deepEqual(pendingMigrations(readdirSync(migrationsDir), []), []);
+  // Real app migrations (e.g. 0001_swarm_deploy_candidates.sql) legitimately
+  // live in this directory — this only checks that the AUTH migration
+  // specifically doesn't leak in unless sign-in has been turned on (which
+  // copies it up from migrations/auth/, see authSchemaCopy above).
+  const pending = pendingMigrations(readdirSync(migrationsDir), []);
+  assert.ok(
+    !pending.some((m) => m.name === AUTH_MIGRATION),
+    "the auth migration must not appear in the top-level directory unless auth is turned on",
+  );
   assert.ok(readdirSync(join(migrationsDir, "auth")).includes("0001_auth.sql"));
 });
 

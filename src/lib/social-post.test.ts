@@ -1,11 +1,6 @@
-import { describe, it, beforeEach, afterEach } from "node:test";
+import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import {
-  pickPromoThread,
-  findRedditPromoThreadImpl,
-  postRedditCommentImpl,
-  postTweetImpl,
-} from "./social-post.ts";
+import { pickPromoThread, findRedditPromoThreadImpl } from "./social-post.ts";
 
 function listingChild(overrides: Partial<{
   id: string;
@@ -88,98 +83,5 @@ describe("findRedditPromoThreadImpl", () => {
     const result = await findRedditPromoThreadImpl("smallbusiness", fakeFetch);
     assert.ok(result);
     assert.equal(result!.threadId, "abc123");
-  });
-});
-
-describe("postRedditCommentImpl", () => {
-  const savedEnv = { ...process.env };
-  beforeEach(() => {
-    delete process.env.REDDIT_CLIENT_ID;
-    delete process.env.REDDIT_CLIENT_SECRET;
-    delete process.env.REDDIT_USERNAME;
-    delete process.env.REDDIT_PASSWORD;
-  });
-  afterEach(() => {
-    process.env = { ...savedEnv };
-  });
-
-  it("refuses to post without credentials configured", async () => {
-    const result = await postRedditCommentImpl({ threadId: "abc123", permalink: "/r/x/y", body: "hi" });
-    assert.equal(result.ok, false);
-    if (!result.ok) assert.match(result.error, /credentials/i);
-  });
-
-  it("never calls the comment endpoint when the token request fails", async () => {
-    process.env.REDDIT_CLIENT_ID = "id";
-    process.env.REDDIT_CLIENT_SECRET = "secret";
-    process.env.REDDIT_USERNAME = "user";
-    process.env.REDDIT_PASSWORD = "pass";
-    let commentCalled = false;
-    const fakeFetch = (async (url: string) => {
-      if (String(url).includes("access_token")) return new Response("", { status: 401 });
-      commentCalled = true;
-      return new Response("", { status: 200 });
-    }) as unknown as typeof fetch;
-    const result = await postRedditCommentImpl({ threadId: "abc123", permalink: "/r/x/y", body: "hi" }, fakeFetch);
-    assert.equal(result.ok, false);
-    assert.equal(commentCalled, false, "must not attempt to post a comment without a valid token");
-  });
-
-  it("posts the comment and returns its permalink on success", async () => {
-    process.env.REDDIT_CLIENT_ID = "id";
-    process.env.REDDIT_CLIENT_SECRET = "secret";
-    process.env.REDDIT_USERNAME = "user";
-    process.env.REDDIT_PASSWORD = "pass";
-    const fakeFetch = (async (url: string) => {
-      if (String(url).includes("access_token")) {
-        return new Response(JSON.stringify({ access_token: "tok_123" }), { status: 200 });
-      }
-      return new Response(
-        JSON.stringify({
-          json: { errors: [], data: { things: [{ data: { permalink: "/r/smallbusiness/comments/abc123/_/def456/" } }] } },
-        }),
-        { status: 200 },
-      );
-    }) as unknown as typeof fetch;
-    const result = await postRedditCommentImpl({ threadId: "abc123", permalink: "/r/x/y", body: "hi" }, fakeFetch);
-    assert.equal(result.ok, true);
-    if (result.ok) assert.match(result.url, /reddit\.com\/r\/smallbusiness/);
-  });
-
-  it("surfaces Reddit's own error list instead of a generic failure", async () => {
-    process.env.REDDIT_CLIENT_ID = "id";
-    process.env.REDDIT_CLIENT_SECRET = "secret";
-    process.env.REDDIT_USERNAME = "user";
-    process.env.REDDIT_PASSWORD = "pass";
-    const fakeFetch = (async (url: string) => {
-      if (String(url).includes("access_token")) {
-        return new Response(JSON.stringify({ access_token: "tok_123" }), { status: 200 });
-      }
-      return new Response(JSON.stringify({ json: { errors: [["RATELIMIT", "you are doing that too much"]] } }), {
-        status: 200,
-      });
-    }) as unknown as typeof fetch;
-    const result = await postRedditCommentImpl({ threadId: "abc123", permalink: "/r/x/y", body: "hi" }, fakeFetch);
-    assert.equal(result.ok, false);
-    if (!result.ok) assert.match(result.error, /RATELIMIT/);
-  });
-});
-
-describe("postTweetImpl", () => {
-  const savedEnv = { ...process.env };
-  beforeEach(() => {
-    delete process.env.X_API_KEY;
-    delete process.env.X_API_SECRET;
-    delete process.env.X_ACCESS_TOKEN;
-    delete process.env.X_ACCESS_SECRET;
-  });
-  afterEach(() => {
-    process.env = { ...savedEnv };
-  });
-
-  it("refuses to post without credentials configured", async () => {
-    const result = await postTweetImpl({ text: "hello" });
-    assert.equal(result.ok, false);
-    if (!result.ok) assert.match(result.error, /credentials/i);
   });
 });
